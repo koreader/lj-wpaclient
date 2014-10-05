@@ -15,25 +15,16 @@ long int send(int, const void *, size_t, int);
 
 int close(int);
 
-static const int EPOLLIN = 1;
-static const int EPOLL_CTL_ADD = 1;
-union epoll_data {
-  void *ptr;
+static const int POLLIN = 1;
+struct pollfd {
   int fd;
-  uint32_t u32;
-  uint64_t u64;
+  short int events;
+  short int revents;
 };
-struct epoll_event {
-  uint32_t events;
-  union epoll_data data;
-} __attribute__((__packed__));
-int epoll_create(int) __attribute__((__nothrow__, __leaf__));
-int epoll_ctl(int, int, int, struct epoll_event *) __attribute__((__nothrow__, __leaf__));
-int epoll_wait(int, struct epoll_event *, int, int);
+int poll(struct pollfd *, long unsigned int, int);
 ]]
 
 local sockaddr_pt = ffi.typeof('struct sockaddr *')
-local epoll_event_t = ffi.typeof('struct epoll_event')
 
 local Socket = {
     AF_UNIX = ffi.C.AF_UNIX,
@@ -66,22 +57,6 @@ function Socket.__index:close()
     return ffi.C.close(self.fd)
 end
 
-function Socket.__index:isReadable()
-    --@TODO check epoll_create and epoll_ctl return  05.10 2014 (houqp)
-    epollfd = ffi.C.epoll_create(1)
-    events = ffi.new(epoll_event_t)
-    watch_ev = ffi.new(epoll_event_t)
-    watch_ev.events = ffi.C.EPOLLIN
-    watch_ev.data.fd = self.fd
-    ffi.C.epoll_ctl(epollfd, ffi.C.EPOLL_CTL_ADD, self.fd, watch_ev)
-    ffi.C.epoll_wait(epollfd, events, 1, 1)
-    if events.data.fd == self.fd then
-        return true
-    else
-        return false
-    end
-end
-
 function Socket.__index:send(buf, len, flags)
     return ffi.C.send(self.fd, buf, len, flags)
 end
@@ -112,16 +87,25 @@ function Socket.__index:recvfromAll(flags)
     local full_buf = ''
     local full_buf_len = 0
 
-    while self:isReadable() do
-        tuple, re = self:__recvfrom(buf, buf_len, flags)
-        full_buf_len = full_buf_len + re
+    local evs = ffi.new('struct pollfd[1]')
+    evs[0].fd = self.fd
+    evs[0].events = ffi.C.POLLIN
 
-        if re <= 0 then break end
-
-        if not full_buf then
-            full_buf = tuple.buf
+    while true do
+        re = ffi.C.poll(evs, 1, 1)
+        if re <= 0 or bit.band(evs[0].revents, ffi.C.POLLIN) == 0 then
+            break
         else
-            full_buf = full_buf .. tuple.buf
+            tuple, re = self:__recvfrom(buf, buf_len, flags)
+            full_buf_len = full_buf_len + re
+
+            if re <= 0 then break end
+
+            if not full_buf then
+                full_buf = tuple.buf
+            else
+                full_buf = full_buf .. tuple.buf
+            end
         end
     end
 
