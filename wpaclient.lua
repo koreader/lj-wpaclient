@@ -85,6 +85,16 @@ function WpaClient.__index:getStatus()
     return results
 end
 
+function WpaClient.__index:disableNetworkByID(id)
+    local re, err = self:sendCmd('DISABLE_NETWORK '..id)
+    return re, err
+end
+
+function WpaClient.__index:enableNetworkByID(id)
+    local re, err = self:sendCmd('ENABLE_NETWORK '..id)
+    return re, err
+end
+
 function WpaClient.__index:close()
     wpa_ctrl.close(self.wc_hdl)
 end
