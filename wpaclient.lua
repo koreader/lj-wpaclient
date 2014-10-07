@@ -95,6 +95,19 @@ function WpaClient.__index:enableNetworkByID(id)
     return re, err
 end
 
+function WpaClient.__index:getConnectedNetwork()
+    re = self:getStatus()
+    if re.wpa_state == 'COMPLETED' then
+        return {
+            id = re.id,
+            ssid = re.ssid,
+            bssid = re.bssid,
+        }
+    else
+        return nil
+    end
+end
+
 function WpaClient.__index:close()
     wpa_ctrl.close(self.wc_hdl)
 end
