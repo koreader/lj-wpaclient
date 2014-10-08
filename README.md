@@ -1,4 +1,4 @@
-lj-wapclient
+lj-wpaclient
 ============
 
 Native Lua implementation of client for wpa_supplicant control protocol.
