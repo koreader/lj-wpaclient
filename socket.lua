@@ -1,28 +1,8 @@
+local cur_path = (...):match("(.-)[^%(.|/)]+$")
+require(cur_path..'socket_h')
+require(cur_path..'poll_h')
+
 local ffi = require("ffi")
-
-ffi.cdef[[
-static const int AF_UNIX = 1;
-static const int SOCK_DGRAM = 2;
-struct sockaddr {
-  short unsigned int sa_family;
-  char sa_data[14];
-};
-int socket(int, int, int) __attribute__((__nothrow__, __leaf__));
-int bind(int, const struct sockaddr *, unsigned int) __attribute__((__nothrow__, __leaf__));
-int connect(int, const struct sockaddr *, unsigned int);
-long int recvfrom(int, void *restrict, size_t, int, struct sockaddr *restrict, unsigned int *restrict);
-long int send(int, const void *, size_t, int);
-
-int close(int);
-
-static const int POLLIN = 1;
-struct pollfd {
-  int fd;
-  short int events;
-  short int revents;
-};
-int poll(struct pollfd *, long unsigned int, int);
-]]
 
 local sockaddr_pt = ffi.typeof('struct sockaddr *')
 
