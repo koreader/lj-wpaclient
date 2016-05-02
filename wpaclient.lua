@@ -53,7 +53,8 @@ function WpaClient.__index:listNetworks()
 end
 
 function WpaClient.__index:doScan()
-    return self:sendCmd('SCAN')
+    local re, err = self:sendCmd('SCAN')
+    return re:match("(.-)\n$"), err
 end
 
 function WpaClient.__index:getScanResults()

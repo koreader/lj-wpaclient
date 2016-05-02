@@ -16,9 +16,13 @@ High level API `WpaClient` is defined in `wpaclient.lua`. Following is a quick
 example on how it can be used to communicate with wpa_supplicant server:
 
 ```lua
-loacl WpaClient = require('wpaclient')
+local WpaClient = require('wpaclient')
 local wcli = WpaClient.new('/var/run/wpa_supplicant/wlan0')
-print( wcli:sendCmd('LIST_NETWORKS') )
+wcli:doScan()
+print("[*] scan results")
+for _, entry in pairs(wcli:getScanResults()) do
+    print("bssid:", entry.bssid, "ssid:", (entry.ssid or "[hidden]") .. "  " .. entry.flags)
+end
 wcli:close()
 ```
 
