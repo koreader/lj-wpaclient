@@ -5,6 +5,7 @@ local Socket = require(cur_path..'socket')
 local wpa_ctrl = {}
 
 ffi.cdef[[
+unsigned int sleep(unsigned int seconds);
 struct sockaddr_un {
   short unsigned int sun_family;
   char sun_path[108];
@@ -81,11 +82,17 @@ function wpa_ctrl.request(hdl, cmd, msg_cb)
     if re < #cmd then
         return nil, 'Failed to send command: '..cmd
     end
+    -- TODO: pass proper flags to recvfromAll
     data, re = hdl.sock:recvfromAll(0)
     if re < 0 then
         return nil, 'No response from wpa_supplicant'
     end
     return data.buf
+end
+
+function wpa_ctrl.readResponse(hdl)
+    local data, re = hdl.sock:recvfromAll(0)
+    return data.buf, re
 end
 
 function wpa_ctrl.command(hdl, cmd)
