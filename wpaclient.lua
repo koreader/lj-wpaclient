@@ -15,11 +15,12 @@ function str_strip(str)
 end
 
 
-local WpaClient = { __index = {} }
+local WpaClient = {__index = {}}
 
 function WpaClient.new(s)
     local instance = {
         wc_hdl = nil,
+        attached = false,
     }
 
     local hdl, err_msg = wpa_ctrl.open(s)
@@ -147,11 +148,27 @@ function WpaClient.__index:getConnectedNetwork()
     end
 end
 
+function WpaClient.__index:attach()
+    wpa_ctrl.attach(self.wc_hdl)
+    self.attached = true
+end
+
+function WpaClient.__index:detach()
+    wpa_ctrl.detach(self.wc_hdl)
+    self.attached = false
+end
+
+function WpaClient.__index:readEvent()
+    local data, re = wpa_ctrl.readResponse(self.wc_hdl)
+    return wpa_ctrl.readEvent(self.wc_hdl)
+end
+
 function WpaClient.__index:disconnect()
     self:sendCmd('DISCONNECT')
 end
 
 function WpaClient.__index:close()
+    if self.attached then self:detach() end
     wpa_ctrl.close(self.wc_hdl)
 end
 

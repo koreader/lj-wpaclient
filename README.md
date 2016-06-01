@@ -28,3 +28,19 @@ wcli:close()
 
 Lower level APIs are defined in `wpa_ctrl.lua` and used in `wpaclient.lua`. It
 mimics C APIs defined in `wpa_ctrl.h` from hostap project.
+
+
+### Listen for events
+
+```lua
+local WpaClient = require('wpaclient')
+local wcli = WpaClient.new('/var/run/wpa_supplicant/wlan0')
+wcli:attach()
+wcli:doScan()
+while true do
+    ev = wcli:readEvent()
+    if ev ~= nil then print('got event:', ev.msg) end
+    os.execute('sleep 2')
+done
+wcli:close()
+```

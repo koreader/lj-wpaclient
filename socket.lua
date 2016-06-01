@@ -47,17 +47,18 @@ function Socket.__index:__recvfrom(buf, len, flags)
     if re < 0 then
         return nil, re
     else
-        return { buf = ffi.string(buf, re) }, re
+        return {buf = ffi.string(buf, re)}, re
     end
 end
 
 function Socket.__index:recvfrom(len, flags)
+    -- TODO: reuse buffer here to reduce GC pressure
     local buf = ffi.new('char[?]', len)
     local tuple, re = self:__recvfrom(buf, len, flags)
     return tuple, re
 end
 
-function Socket.__index:recvfromAll(flags)
+function Socket.__index:recvfromAll(flags, event_queue)
     -- FIXME: hard coded buf length stolen from:
     -- wpa_supplicant/ctrl_iface_unix.c
     local buf_len = 4096
@@ -79,12 +80,17 @@ function Socket.__index:recvfromAll(flags)
             tuple, re = self:__recvfrom(buf, buf_len, flags)
             full_buf_len = full_buf_len + re
 
-            if re <= 0 then break end
+            if re < 0 then return nil, re end
 
-            if not full_buf then
-                full_buf = tuple.buf
+            if string.sub(tuple.buf, 1, 1) == '<' then
+                -- record unsolicited messages in event_queue for later use
+                event_queue:parse(tuple.buf)
             else
-                full_buf = full_buf .. tuple.buf
+                if not full_buf then
+                    full_buf = tuple.buf
+                else
+                    full_buf = full_buf .. tuple.buf
+                end
             end
         end
     end
