@@ -12,15 +12,13 @@ Dependencies
 
 Usage
 -----
-High level API `WpaClient` is defined in `wpaclient.lua`. Following is a quick
-example on how it can be used to communicate with wpa_supplicant server:
+High level APIs are defined in `wpaclient.lua`. A quick example on how it can
+be used to communicate with wpa_supplicant server:
 
 ```lua
 local WpaClient = require('wpaclient')
 local wcli = WpaClient.new('/var/run/wpa_supplicant/wlan0')
-wcli:doScan()
-print("[*] scan results")
-for _, entry in pairs(wcli:getScanResults()) do
+for _, entry in pairs(wcli:scanThenGetResults()) do
     print("bssid:", entry.bssid, "ssid:", (entry.ssid or "[hidden]") .. "  " .. entry.flags)
 end
 wcli:close()

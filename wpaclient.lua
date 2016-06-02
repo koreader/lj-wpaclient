@@ -97,6 +97,36 @@ function WpaClient.__index:getScanResults()
     return results
 end
 
+function WpaClient.__index:scanThenGetResults()
+    local was_attached = self.attached
+    if not was_attached then
+        self:attach()
+    end
+    local re, err = self:doScan()
+    if err then return nil, err end
+
+    local ev, found_result = false
+    local wait_cnt = 20
+    while wait_cnt > 0 do
+        for _,ev in ipairs(self:readAllEvents()) do
+            if ev.lvl == 'WARNING' and ev.msg == 'CTRL-EVENT-SCAN-RESULTS' then
+                found_result = true
+                break
+            end
+        end
+        if found_result then break end
+
+        wait_cnt = wait_cnt - 1
+        -- sleep for 1 second
+        ffi.C.poll(nil, 0, 1000)
+    end
+
+    if not was_attached then
+        self:detach()
+    end
+    return self:getScanResults()
+end
+
 function WpaClient.__index:getStatus()
     local results = {}
     local re_str, err = self:sendCmd('STATUS')
@@ -161,6 +191,17 @@ end
 function WpaClient.__index:readEvent()
     local data, re = wpa_ctrl.readResponse(self.wc_hdl)
     return wpa_ctrl.readEvent(self.wc_hdl)
+end
+
+function WpaClient.__index:readAllEvents()
+    local evs = {}
+    repeat
+        ev = self:readEvent()
+        if ev ~= nil then
+            table.insert(evs, ev)
+        end
+    until ev == nil
+    return evs
 end
 
 function WpaClient.__index:disconnect()

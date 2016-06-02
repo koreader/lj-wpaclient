@@ -35,7 +35,8 @@ function event_queue_mt.__index:parse(ev_str)
     -- TODO: use regex
     self:push({
         lvl = ev_lv2str[string.sub(ev_str, 2, 2)],
-        msg = string.sub(ev_str, 4),
+        -- use -2 to get rid of the space at the end
+        msg = string.sub(ev_str, 4, -2),
     })
 end
 
