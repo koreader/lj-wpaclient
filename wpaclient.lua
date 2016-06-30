@@ -53,13 +53,13 @@ function WpaClient.__index:sendCmd(cmd, block)
 end
 
 function WpaClient.__index:getInterfaces()
-    local re_str = self:sendCmd('INTERFACES')
+    local re_str = self:sendCmd('INTERFACES', true)
     return str_split(re_str, '\n')
 end
 
 function WpaClient.__index:listNetworks()
     local results = {}
-    local re_str = self:sendCmd('LIST_NETWORKS')
+    local re_str = self:sendCmd('LIST_NETWORKS', true)
     local lst = str_split(re_str, '\n')
     table.remove(lst, 1)
     for k,v in ipairs(lst) do
@@ -75,13 +75,13 @@ function WpaClient.__index:listNetworks()
 end
 
 function WpaClient.__index:doScan()
-    local re, err = self:sendCmd('SCAN')
+    local re, err = self:sendCmd('SCAN', true)
     return str_strip(re), err
 end
 
 function WpaClient.__index:getScanResults()
     local results = {}
-    local re_str, err = self:sendCmd('SCAN_RESULTS')
+    local re_str, err = self:sendCmd('SCAN_RESULTS', true)
     local lst = str_split(re_str, '\n')
     table.remove(lst, 1)
     for k,v in ipairs(lst) do
@@ -129,7 +129,7 @@ end
 
 function WpaClient.__index:getStatus()
     local results = {}
-    local re_str, err = self:sendCmd('STATUS')
+    local re_str, err = self:sendCmd('STATUS', true)
     local lst = str_split(re_str, '\n')
     for _,v in ipairs(lst) do
         local eqs, eqe = v:find('=')
@@ -139,17 +139,17 @@ function WpaClient.__index:getStatus()
 end
 
 function WpaClient.__index:addNetwork()
-    local re, err = self:sendCmd('ADD_NETWORK')
+    local re, err = self:sendCmd('ADD_NETWORK', true)
     return str_strip(re), err
 end
 
 function WpaClient.__index:removeNetwork(id)
-    local re, err = self:sendCmd('REMOVE_NETWORK '..id)
+    local re, err = self:sendCmd('REMOVE_NETWORK '..id, true)
     return str_strip(re), err
 end
 
 function WpaClient.__index:disableNetworkByID(id)
-    local re, err = self:sendCmd('DISABLE_NETWORK '..id)
+    local re, err = self:sendCmd('DISABLE_NETWORK '..id, true)
     return re, err
 end
 
@@ -161,7 +161,7 @@ function WpaClient.__index:setNetwork(id, key, value)
 end
 
 function WpaClient.__index:enableNetworkByID(id)
-    local re, err = self:sendCmd('ENABLE_NETWORK '..id)
+    local re, err = self:sendCmd('ENABLE_NETWORK '..id, true)
     return re, err
 end
 
