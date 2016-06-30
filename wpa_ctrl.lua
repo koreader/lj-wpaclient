@@ -28,16 +28,12 @@ local MAX_EV_QUEUE_SZ = 5000
 local event_queue_mt = {__index = {}}
 
 function event_queue_mt.__index:parse(ev_str)
-    if string.len(ev_str) <= 4 then
+    local lvl, msg = string.match(ev_str, '^<(%d)>(.-)%s*$')
+    if not lvl then
         -- TODO: log error
         return
     end
-    -- TODO: use regex
-    self:push({
-        lvl = ev_lv2str[string.sub(ev_str, 2, 2)],
-        -- use -2 to get rid of the space at the end
-        msg = string.sub(ev_str, 4, -2),
-    })
+    self:push({lvl = lvl, msg = msg})
 end
 
 function event_queue_mt.__index:push(ele)
