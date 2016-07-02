@@ -17,6 +17,23 @@ local sockaddr_un_t = ffi.typeof('struct sockaddr_un')
 math.randomseed(os.time())
 
 
+local event_mt = {__index = {}}
+
+function event_mt.__index:isAuthSuccessful()
+    return string.match(self.msg, '%w+: Key negotiation completed with (.+)') ~= nil
+end
+
+function event_mt.__index:isScanEvent()
+    return (self.msg == 'WPS-AP-AVAILABLE'
+            or self.msg == 'CTRL-EVENT-SCAN-RESULTS'
+            or string.match(self.msg, 'CTRL%-EVENT%-BSS%-%w+ %d+ .*') ~= nil)
+end
+
+function event_mt.__index:isAuthFailed()
+    return (string.match(self.msg, 'Authentication with (.-) timed out') ~= nil
+            or self.msg == 'CTRL-EVENT-DISCONNECTED - Disconnect event - remove keys')
+end
+
 local ev_lv2str = {
     ['0'] = 'MSGDUMP',
     ['1'] = 'DEBUG',
@@ -33,7 +50,9 @@ function event_queue_mt.__index:parse(ev_str)
         -- TODO: log error
         return
     end
-    self:push({lvl = lvl, msg = msg})
+    local ev = {lvl = lvl, msg = msg}
+    setmetatable(ev, event_mt)
+    self:push(ev)
 end
 
 function event_queue_mt.__index:push(ele)
