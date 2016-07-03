@@ -50,7 +50,7 @@ function event_queue_mt.__index:parse(ev_str)
         -- TODO: log error
         return
     end
-    local ev = {lvl = lvl, msg = msg}
+    local ev = {lvl = ev_lv2str[lvl], msg = msg}
     setmetatable(ev, event_mt)
     self:push(ev)
 end
@@ -67,7 +67,7 @@ function event_queue_mt.__index:pop()
 end
 
 local function new_event_queue()
-    q = {queue = {}}
+    local q = {queue = {}}
     setmetatable(q, event_queue_mt)
     return q
 end
@@ -94,7 +94,7 @@ function wpa_ctrl.open(ctrl_sock)
     }
 
     -- we only try ten times before give up
-    for i=1, 10 do
+    for _=1, 10 do
         hdl.recv_sock_path = '/tmp/lj-wpaclient-'..math.random(0, 100000)
         if not file_exists(hdl.recv_sock_path) then
             break
@@ -136,7 +136,7 @@ function wpa_ctrl.close(hdl)
     end
 end
 
-function wpa_ctrl.request(hdl, cmd, msg_cb)
+function wpa_ctrl.request(hdl, cmd)
     local re, data
     re = hdl.sock:send(cmd, #cmd, 0)
     if re < #cmd then

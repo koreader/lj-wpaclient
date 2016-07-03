@@ -3,14 +3,15 @@ local cur_path = (...):match("(.-)[^%(.|/)]+$")
 local wpa_ctrl = require(cur_path..'wpa_ctrl')
 
 
-function str_split(str, sep)
-    local sep, fields = sep or ":", {}
+local function str_split(str, sep)
+    local fields = {}
+    sep = sep or ":"
     local pattern = string.format("([^%s]+)", sep)
     str:gsub(pattern, function(c) fields[#fields+1] = c end)
     return fields
 end
 
-function str_strip(str)
+local function str_strip(str)
     return str:match("(.-)\n$")
 end
 
@@ -61,15 +62,15 @@ function WpaClient.__index:listNetworks()
     local results = {}
     local re_str = self:sendCmd('LIST_NETWORKS', true)
     local lst = str_split(re_str, '\n')
-    table.remove(lst, 1)
-    for k,v in ipairs(lst) do
-        splits = str_split(v, '\t')
-        results[k] = {
+    table.remove(lst, 1)  -- remove output table header
+    for _,v in ipairs(lst) do
+        local splits = str_split(v, '\t')
+        table.insert(results, {
             id = splits[1],
             ssid = splits[2],
             bssid = splits[3],
             flags = splits[4],
-        }
+        })
     end
     return results
 end
@@ -82,17 +83,19 @@ end
 function WpaClient.__index:getScanResults()
     local results = {}
     local re_str, err = self:sendCmd('SCAN_RESULTS', true)
+    if err then return nil, err end
+
     local lst = str_split(re_str, '\n')
-    table.remove(lst, 1)
-    for k,v in ipairs(lst) do
-        splits = str_split(v, '\t')
-        results[k] = {
+    table.remove(lst, 1)  -- remove output table header
+    for _,v in ipairs(lst) do
+        local splits = str_split(v, '\t')
+        table.insert(results, {
             bssid = splits[1],
             frequency = splits[2],
             signal_level = splits[3],
             flags = splits[4],
             ssid = splits[5],
-        }
+        })
     end
     return results
 end
@@ -102,10 +105,10 @@ function WpaClient.__index:scanThenGetResults()
     if not was_attached then
         self:attach()
     end
-    local re, err = self:doScan()
+    local _, err = self:doScan()
     if err then return nil, err end
 
-    local ev, found_result = false
+    local found_result = false
     local wait_cnt = 20
     while wait_cnt > 0 do
         for _,ev in ipairs(self:readAllEvents()) do
@@ -130,6 +133,8 @@ end
 function WpaClient.__index:getStatus()
     local results = {}
     local re_str, err = self:sendCmd('STATUS', true)
+    if err then return nil, err end
+
     local lst = str_split(re_str, '\n')
     for _,v in ipairs(lst) do
         local eqs, eqe = v:find('=')
@@ -166,7 +171,7 @@ function WpaClient.__index:enableNetworkByID(id)
 end
 
 function WpaClient.__index:getConnectedNetwork()
-    re = self:getStatus()
+    local re = self:getStatus()
     if re.wpa_state == 'COMPLETED' then
         return {
             id = re.id,
@@ -189,14 +194,14 @@ function WpaClient.__index:detach()
 end
 
 function WpaClient.__index:readEvent()
-    local data, re = wpa_ctrl.readResponse(self.wc_hdl)
+    wpa_ctrl.readResponse(self.wc_hdl)
     return wpa_ctrl.readEvent(self.wc_hdl)
 end
 
 function WpaClient.__index:readAllEvents()
     local evs = {}
     repeat
-        ev = self:readEvent()
+        local ev = self:readEvent()
         if ev ~= nil then
             table.insert(evs, ev)
         end

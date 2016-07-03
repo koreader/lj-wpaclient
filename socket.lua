@@ -66,7 +66,7 @@ function Socket.__index:recvfromAll(flags, event_queue)
     -- FIXME: hard coded buf length stolen from:
     -- wpa_supplicant/ctrl_iface_unix.c
     local buf_len = 4096
-    local re = -1
+    local re
     local tuple
     local buf = ffi.new('char[?]', buf_len)
     local full_buf = ''
