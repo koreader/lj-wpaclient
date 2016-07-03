@@ -1,8 +1,12 @@
 local cur_path = (...):match("(.-)[^%(.|/)]+$")
-require(cur_path..'socket_h')
-require(cur_path..'poll_h')
-
 local ffi = require("ffi")
+if pcall(function() return ffi.C.socket end) == false then
+    require(cur_path..'socket_h')
+end
+if pcall(function() return ffi.C.poll end) == false then
+    require(cur_path..'poll_h')
+end
+
 
 local sockaddr_pt = ffi.typeof('struct sockaddr *')
 
