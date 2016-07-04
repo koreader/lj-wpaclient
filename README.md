@@ -19,7 +19,10 @@ be used to communicate with wpa_supplicant server:
 local WpaClient = require('wpaclient')
 local wcli = WpaClient.new('/var/run/wpa_supplicant/wlan0')
 for _, entry in pairs(wcli:scanThenGetResults()) do
-    print("bssid:", entry.bssid, "ssid:", (entry.ssid or "[hidden]") .. "  " .. entry.flags)
+    print("quality:", entry:getSignalQuality()),
+          "bssid:", entry.bssid,
+          "ssid:", (entry.ssid or "[hidden]"),
+          "flags:", entry.flags)
 end
 wcli:close()
 ```
@@ -37,8 +40,11 @@ wcli:attach()
 wcli:doScan()
 while true do
     ev = wcli:readEvent()
-    if ev ~= nil then print('got event:', ev.msg) end
-    os.execute('sleep 2')
+    if ev ~= nil then
+        print('got event:', ev.lvl, ev.msg)
+    else
+        os.execute('sleep 2')
+    end
 done
 wcli:close()
 ```

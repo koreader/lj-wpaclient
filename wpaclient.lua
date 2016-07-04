@@ -80,6 +80,13 @@ function WpaClient.__index:doScan()
     return str_strip(re), err
 end
 
+local network_mt = {__index = {}}
+
+function network_mt.__index:getSignalQuality()
+    -- convert from RSSI(dBm) to signal quality in range of 0% - 100%.
+    return math.min(math.max((self.signal_level + 100) * 2, 0), 100)
+end
+
 function WpaClient.__index:getScanResults()
     local results = {}
     local re_str, err = self:sendCmd('SCAN_RESULTS', true)
@@ -89,13 +96,15 @@ function WpaClient.__index:getScanResults()
     table.remove(lst, 1)  -- remove output table header
     for _,v in ipairs(lst) do
         local splits = str_split(v, '\t')
-        table.insert(results, {
+        local network = {
             bssid = splits[1],
-            frequency = splits[2],
-            signal_level = splits[3],
+            frequency = tonumber(splits[2]),
+            signal_level = tonumber(splits[3]),
             flags = splits[4],
             ssid = splits[5],
-        })
+        }
+        setmetatable(network, network_mt)
+        table.insert(results, network)
     end
     return results
 end
