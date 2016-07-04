@@ -19,7 +19,7 @@ be used to communicate with wpa_supplicant server:
 local WpaClient = require('wpaclient')
 local wcli = WpaClient.new('/var/run/wpa_supplicant/wlan0')
 for _, entry in pairs(wcli:scanThenGetResults()) do
-    print("quality:", entry:getSignalQuality()),
+    print("quality:", entry:getSignalQuality(),
           "bssid:", entry.bssid,
           "ssid:", (entry.ssid or "[hidden]"),
           "flags:", entry.flags)
