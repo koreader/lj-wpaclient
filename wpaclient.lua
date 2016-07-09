@@ -75,6 +75,15 @@ function WpaClient.__index:listNetworks()
     return results
 end
 
+function WpaClient.__index:getCurrentNetwork()
+    local networks = self:listNetworks()
+    for _,nw in ipairs(networks) do
+        if string.find(nw.flags, '[CURRENT]') then
+            return nw
+        end
+    end
+end
+
 function WpaClient.__index:doScan()
     local re, err = self:sendCmd('SCAN', true)
     return str_strip(re), err
@@ -83,7 +92,7 @@ end
 local network_mt = {__index = {}}
 
 function network_mt.__index:getSignalQuality()
-    -- convert from RSSI(dBm) to signal quality in range of 0% - 100%.
+    -- convert from RSSI to signal quality in range of [0%, 100%].
     return math.min(math.max((self.signal_level + 100) * 2, 0), 100)
 end
 
