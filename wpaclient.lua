@@ -103,6 +103,12 @@ function WpaClient.__index:getScanResults()
             flags = splits[4],
             ssid = splits[5],
         }
+        -- Old version of wpa_supplicant reports signal level in dBm, we need
+        -- to restrict it to range of [-192, 63] to keep it consistent with new
+        -- version. ref: http://readlist.com/lists/shmoo.com/hostap/1/6589.html
+        if network.signal_level > 63 then
+            network.signal_level = network.signal_level - 0x100
+        end
         setmetatable(network, network_mt)
         table.insert(results, network)
     end
