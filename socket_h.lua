@@ -1,8 +1,6 @@
 local ffi = require('ffi')
 
 ffi.cdef[[
-static const int AF_UNIX = 1;
-static const int SOCK_DGRAM = 2;
 struct sockaddr {
   short unsigned int sa_family;
   char sa_data[14];
