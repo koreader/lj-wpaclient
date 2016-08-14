@@ -1,5 +1,8 @@
 local cur_path = (...):match("(.-)[^%(.|/)]+$")
 local ffi = require("ffi")
+if pcall(function() return ffi.C.AF_UNIX end) == false then
+    require(cur_path..'consts_h')
+end
 if pcall(function() return ffi.C.socket end) == false then
     require(cur_path..'socket_h')
 end
