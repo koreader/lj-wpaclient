@@ -78,7 +78,7 @@ end
 function WpaClient.__index:getCurrentNetwork()
     local networks = self:listNetworks()
     for _,nw in ipairs(networks) do
-        if nw.flags and string.find(nw.flags, '[CURRENT]') then
+        if nw.flags and string.find(nw.flags, '%[CURRENT%]') then
             return nw
         end
     end
