@@ -58,7 +58,7 @@ local wcli = WpaClient.new('/var/run/wpa_supplicant/wlan0')
 
 local nw_id, err = wcli:addNetwork()
 print('[*] got network id: ', nw_id)
-wcli:setNetwork(nw_id, "ssid", "random-super-safe-free-wifi")
+wcli:setNetwork(nw_id, "ssid", "\"random-super-safe-free-wifi\"")
 wcli:setNetwork(nw_id, "psk", "\"PASSWORD\"")
 -- That's it! Now run your favorite DHCP client to obtain an IP :)
 wcli:close()
