@@ -184,7 +184,7 @@ end
 
 function WpaClient.__index:setNetwork(id, key, value)
     local re, err = self:sendCmd(
-        string.format('SET_NETWORK %d %s "%s"', id, key, value),
+        string.format('SET_NETWORK %d %s %s', id, key, value),
         true)  -- set block to true
     return str_strip(re), err
 end
