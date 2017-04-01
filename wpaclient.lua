@@ -136,7 +136,7 @@ function WpaClient.__index:scanThenGetResults()
     local wait_cnt = 20
     while wait_cnt > 0 do
         for _,ev in ipairs(self:readAllEvents()) do
-            if ev.lvl == 'INFO' and ev.msg == 'CTRL-EVENT-SCAN-RESULTS' then
+            if ev.msg == 'CTRL-EVENT-SCAN-RESULTS' then
                 found_result = true
                 break
             end
