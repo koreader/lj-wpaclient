@@ -102,24 +102,27 @@ function WpaClient.__index:getScanResults()
     if err then return nil, err end
 
     local lst = str_split(re_str, '\n')
-    table.remove(lst, 1)  -- remove output table header
     for _,v in ipairs(lst) do
         local splits = str_split(v, '\t')
-        local network = {
-            bssid = splits[1],
-            frequency = tonumber(splits[2]),
-            signal_level = tonumber(splits[3]),
-            flags = splits[4],
-            ssid = splits[5],
-        }
-        -- Old version of wpa_supplicant reports signal level in dBm, we need
-        -- to restrict it to range of [-192, 63] to keep it consistent with new
-        -- version. ref: http://readlist.com/lists/shmoo.com/hostap/1/6589.html
-        if network.signal_level > 63 then
-            network.signal_level = network.signal_level - 0x100
+
+        if splits[5] then  -- remove lines which cannot split into 5 parts
+            local network = {
+                bssid = splits[1],
+                frequency = tonumber(splits[2]),
+                signal_level = tonumber(splits[3]),
+                flags = splits[4],
+                ssid = splits[5],
+            }
+            -- Old version of wpa_supplicant reports signal level in dBm, we
+            -- need to restrict it to range of [-192, 63] to keep it consistent
+            -- with new version.
+            -- ref: http://readlist.com/lists/shmoo.com/hostap/1/6589.html
+            if network.signal_level > 63 then
+                network.signal_level = network.signal_level - 0x100
+            end
+            setmetatable(network, network_mt)
+            table.insert(results, network)
         end
-        setmetatable(network, network_mt)
-        table.insert(results, network)
     end
     return results
 end
