@@ -105,7 +105,7 @@ function WpaClient.__index:getScanResults()
     for _,v in ipairs(lst) do
         local splits = str_split(v, '\t')
 
-        if splits[5] then  -- remove lines which cannot split into 5 parts
+        if splits[5] then  -- ignore lines which don't split into 5 parts
             local network = {
                 bssid = splits[1],
                 frequency = tonumber(splits[2]),
