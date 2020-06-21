@@ -45,7 +45,7 @@ while true do
     else
         os.execute('sleep 2')
     end
-done
+end
 wcli:close()
 ```
 
