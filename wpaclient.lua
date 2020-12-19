@@ -92,8 +92,16 @@ end
 local network_mt = {__index = {}}
 
 function network_mt.__index:getSignalQuality()
-    -- convert from RSSI to signal quality in range of [0%, 100%].
-    return math.min(math.max((self.signal_level + 100) * 2, 0), 100)
+    -- Make sure the RSSI is in a positive range (hopefully one that's in the ballpark of [0%, 100%]).
+    -- There's no real silver bullet here, as the RSSI is in arbitrary units,
+    -- which means every driver kinda does what it wants with them...
+
+    -- So, at the very least, attempt to detect those that report it as a dBm value, because it'll be negative.
+    if self.signal_level < 0
+        return self.signal_level + 100
+    else
+        return self.signal_level
+    end
 end
 
 function WpaClient.__index:getScanResults()
