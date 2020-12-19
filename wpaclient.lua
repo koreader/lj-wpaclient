@@ -94,10 +94,12 @@ local network_mt = {__index = {}}
 function network_mt.__index:getSignalQuality()
     -- Make sure the RSSI is in a positive range (hopefully one that's in the ballpark of [0%, 100%]).
     -- There's no real silver bullet here, as the RSSI is in arbitrary units,
-    -- which means every driver kinda does what it wants with them...
+    -- which means every driver kinda does what it wants with it...
 
     -- So, at the very least, attempt to detect those that report it as a dBm value, because it'll be negative.
     if self.signal_level < 0
+        -- Actually hitting 0 dBm is highly unlikely, but, assuming [-100, 0] nonetheless appears to give consistent
+        -- results across the WiFi drivers used on Kobo devices...
         return self.signal_level + 100
     else
         return self.signal_level
