@@ -97,7 +97,7 @@ function network_mt.__index:getSignalQuality()
     -- which means every driver kinda does what it wants with it...
 
     -- So, at the very least, attempt to detect those that report it as a dBm value, because it'll be negative.
-    if self.signal_level < 0
+    if self.signal_level < 0 then
         -- Actually hitting 0 dBm is highly unlikely, but, assuming [-100, 0] nonetheless appears to give consistent
         -- results across the WiFi drivers used on Kobo devices...
         return self.signal_level + 100
