@@ -106,6 +106,7 @@ function network_mt.__index:getSignalQuality()
     local function dbm_to_qual(val)
         val = math.abs(clamp(val, -100, -20) + 20)    -- Normalize to 0
         val = 100 - math.floor((100.0 * val) / 80.0)  -- Make that a percentage
+        return val
     end
 
     local val = self.signal_level
