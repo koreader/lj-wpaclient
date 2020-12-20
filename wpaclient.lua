@@ -119,7 +119,7 @@ function network_mt.__index:getSignalQuality()
         val = val - 256                               -- Subtract 256 to convert to dBm
         val = dbm_to_qual(val)
     else
-        -- Assume signal is a already "quality" percentage
+        -- Assume signal is already a "quality" percentage
     end
 
     return clamp(val, 0, 100)
