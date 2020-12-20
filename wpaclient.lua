@@ -110,7 +110,7 @@ function network_mt.__index:getSignalQuality()
 
     local val = self.signal_level
     if val < 0 then
-        -- Assume dBm already; rough conversion: best = -30, worst = -100
+        -- Assume dBm already; rough conversion: best = -20, worst = -100
         val = dbm_to_qual(val)
     elseif val > 110 and val < 256 then
         -- assume old-style WEXT 8-bit unsigned signal level
