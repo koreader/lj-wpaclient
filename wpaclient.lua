@@ -94,7 +94,8 @@ local network_mt = {__index = {}}
 function network_mt.__index:getSignalQuality()
     -- Based on NetworkManager's nm_wifi_utils_level_to_quality
     -- c.f., https://github.com/NetworkManager/NetworkManager/blob/2fa8ef9fb9c7fe0cc2d9523eed6c5a3749b05175/src/nm-core-utils.c#L5083-L5100
-    -- With a minor tweak: we assume a best-case at -20dBm, because we've seen Kobos report slightly wonky values (as low as -15dBm)...
+    -- With a minor tweak: we assume a best-case at -20dBm (instead of -40dBm),
+    -- because we've seen Kobos report slightly wonky values (as low as -15dBm)...
     -- https://github.com/koreader/lj-wpaclient/pull/6 & https://github.com/koreader/koreader/issues/7008
     -- There's no real silver bullet here, as the RSSI is in arbitrary units,
     -- which means every driver kinda does what it wants with it...
@@ -105,7 +106,7 @@ function network_mt.__index:getSignalQuality()
 
     local function dbm_to_qual(val)
         val = math.abs(clamp(val, -100, -20) + 20)    -- Normalize to 0
-        val = 100 - math.floor((100.0 * val) / 80.0)  -- Make that a percentage
+        val = 100 - math.floor((100.0 * val) / 80.0)  -- Rescale to [0, 100] range
         return val
     end
 
@@ -114,8 +115,8 @@ function network_mt.__index:getSignalQuality()
         -- Assume dBm already; rough conversion: best = -20, worst = -100
         val = dbm_to_qual(val)
     elseif val > 110 and val < 256 then
-        -- assume old-style WEXT 8-bit unsigned signal level
-        val = val - 256                               -- subtract 256 to convert to dBm
+        -- Assume old-style WEXT 8-bit unsigned signal level
+        val = val - 256                               -- Subtract 256 to convert to dBm
         val = dbm_to_qual(val)
     else
         -- Assume signal is a already "quality" percentage
