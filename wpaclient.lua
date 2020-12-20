@@ -92,18 +92,35 @@ end
 local network_mt = {__index = {}}
 
 function network_mt.__index:getSignalQuality()
-    -- Make sure the RSSI is in a positive range (hopefully one that's in the ballpark of [0%, 100%]).
+    -- Based on NetworkManager's nm_wifi_utils_level_to_quality
+    -- c.f., https://github.com/NetworkManager/NetworkManager/blob/2fa8ef9fb9c7fe0cc2d9523eed6c5a3749b05175/src/nm-core-utils.c#L5083-L5100
+    -- With a minor tweak: we assume a best-case at -20dBm, because we've seen Kobos report slightly wonky values (as low as -15dBm)...
+    -- https://github.com/koreader/lj-wpaclient/pull/6 & https://github.com/koreader/koreader/issues/7008
     -- There's no real silver bullet here, as the RSSI is in arbitrary units,
     -- which means every driver kinda does what it wants with it...
 
-    -- So, at the very least, attempt to detect those that report it as a dBm value, because it'll be negative.
-    if self.signal_level < 0 then
-        -- Actually hitting 0 dBm is highly unlikely, but, assuming [-100, 0] nonetheless appears to give consistent
-        -- results across the WiFi drivers used on Kobo devices...
-        return self.signal_level + 100
-    else
-        return self.signal_level
+    local function clamp(val, min, max)
+        return math.max(min, math.min(max, val))
     end
+
+    local function dbm_to_qual(val)
+        val = math.abs(clamp(val, -100, -20) + 20)    -- Normalize to 0
+        val = 100 - math.floor((100.0 * val) / 80.0)  -- Make that a percentage
+    end
+
+    local val = self.signal_level
+    if val < 0 then
+        -- Assume dBm already; rough conversion: best = -30, worst = -100
+        val = dbm_to_qual(val)
+    elseif val > 110 and val < 256 then
+        -- assume old-style WEXT 8-bit unsigned signal level
+        val = val - 256                               -- subtract 256 to convert to dBm
+        val = dbm_to_qual(val)
+    else
+        -- Assume signal is a already "quality" percentage
+    end
+
+    return clamp(val, 0, 100)
 end
 
 function WpaClient.__index:getScanResults()
