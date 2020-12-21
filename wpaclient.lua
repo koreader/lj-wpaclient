@@ -92,8 +92,37 @@ end
 local network_mt = {__index = {}}
 
 function network_mt.__index:getSignalQuality()
-    -- convert from RSSI to signal quality in range of [0%, 100%].
-    return math.min(math.max((self.signal_level + 100) * 2, 0), 100)
+    -- Based on NetworkManager's nm_wifi_utils_level_to_quality
+    -- c.f., https://github.com/NetworkManager/NetworkManager/blob/2fa8ef9fb9c7fe0cc2d9523eed6c5a3749b05175/src/nm-core-utils.c#L5083-L5100
+    -- With a minor tweak: we assume a best-case at -20dBm (instead of -40dBm),
+    -- because we've seen Kobos report slightly wonky values (as low as -15dBm)...
+    -- https://github.com/koreader/lj-wpaclient/pull/6 & https://github.com/koreader/koreader/issues/7008
+    -- There's no real silver bullet here, as the RSSI is in arbitrary units,
+    -- which means every driver kinda does what it wants with it...
+
+    local function clamp(val, min, max)
+        return math.max(min, math.min(max, val))
+    end
+
+    local function dbm_to_qual(val)
+        val = math.abs(clamp(val, -100, -20) + 20)    -- Normalize to 0
+        val = 100 - math.floor((100.0 * val) / 80.0)  -- Rescale to [0, 100] range
+        return val
+    end
+
+    local val = self.signal_level
+    if val < 0 then
+        -- Assume dBm already; rough conversion: best = -20, worst = -100
+        val = dbm_to_qual(val)
+    elseif val > 110 and val < 256 then
+        -- Assume old-style WEXT 8-bit unsigned signal level
+        val = val - 256                               -- Subtract 256 to convert to dBm
+        val = dbm_to_qual(val)
+    else
+        -- Assume signal is already a "quality" percentage
+    end
+
+    return clamp(val, 0, 100)
 end
 
 function WpaClient.__index:getScanResults()
@@ -113,13 +142,6 @@ function WpaClient.__index:getScanResults()
                 flags = splits[4],
                 ssid = splits[5],
             }
-            -- Old version of wpa_supplicant reports signal level in dBm, we
-            -- need to restrict it to range of [-192, 63] to keep it consistent
-            -- with new version.
-            -- ref: http://readlist.com/lists/shmoo.com/hostap/1/6589.html
-            if network.signal_level > 63 then
-                network.signal_level = network.signal_level - 0x100
-            end
             setmetatable(network, network_mt)
             table.insert(results, network)
         end
