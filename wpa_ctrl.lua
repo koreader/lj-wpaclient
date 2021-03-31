@@ -20,7 +20,8 @@ math.randomseed(os.time())
 local event_mt = {__index = {}}
 
 function event_mt.__index:isAuthSuccessful()
-    return string.match(self.msg, '%w+: Key negotiation completed with (.+)') ~= nil
+    return (string.find(self.msg, 'CTRL%-EVENT%-CONNECTED')
+            or string.match(self.msg, '%w+: Key negotiation completed with (.+)') ~= nil)
 end
 
 function event_mt.__index:isScanEvent()
