@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <unistd.h>
 #include <sys/un.h>
 #include <sys/socket.h>
@@ -5,6 +6,7 @@
 
 #include "ffi-cdecl.h"
 
+cdecl_const(EINTR)
 cdecl_const(AF_UNIX)
 cdecl_const(SOCK_DGRAM)
 cdecl_const(MSG_PEEK)

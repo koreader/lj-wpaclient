@@ -50,7 +50,7 @@ function Socket.__index:send(buf, len, flags)
 end
 
 function Socket.__index:__recvfrom(buf, len, flags)
-    --@TODO support for parsing (host, port) tuple 04.10 2014 (houqp)
+    --- @TODO support for parsing (host, port) tuple 04.10 2014 (houqp)
     local re = C.recvfrom(self.fd, buf, len, flags, nil, nil)
     if re < 0 then
         return nil, re
@@ -69,9 +69,7 @@ end
 function Socket.__index:recvfromAll(flags, event_queue)
     -- FIXME: hard coded buf length stolen from:
     -- wpa_supplicant/ctrl_iface_unix.c
-    local buf_len = 4096
-    local re
-    local tuple
+    local buf_len = 8192 + 1
     local buf = ffi.new('char[?]', buf_len)
     local full_buf = ''
     local full_buf_len = 0
@@ -81,25 +79,34 @@ function Socket.__index:recvfromAll(flags, event_queue)
     evs[0].events = C.POLLIN
 
     while true do
-        re = C.poll(evs, 1, 1)
-        if re <= 0 or bit.band(evs[0].revents, C.POLLIN) == 0 then
-            break
-        else
-            tuple, re = self:__recvfrom(buf, buf_len, flags)
-            full_buf_len = full_buf_len + re
+        --- @todo: Switch to non-blocking?
+        local re = C.poll(evs, 1, 1)
+        if re == -1 then
+            local errno = ffi.errno()
+            if errno ~= C.EINTR then
+                break
+            end
+        elseif re > 0 then
+            if bit.band(evs[0].revents, C.POLLIN) ~= 0 then
+                local tuple
+                tuple, re = self:__recvfrom(buf, buf_len, flags)
+                full_buf_len = full_buf_len + re
 
-            if re < 0 then return nil, re end
+                if re < 0 then return nil, re end
 
-            if string.sub(tuple.buf, 1, 1) == '<' then
-                -- record unsolicited messages in event_queue for later use
-                event_queue:parse(tuple.buf)
-            else
-                if not full_buf then
-                    full_buf = tuple.buf
+                if string.sub(tuple.buf, 1, 1) == '<' then
+                    -- record unsolicited messages in event_queue for later use
+                    event_queue:parse(tuple.buf)
                 else
-                    full_buf = full_buf .. tuple.buf
+                    if not full_buf then
+                        full_buf = tuple.buf
+                    else
+                        full_buf = full_buf .. tuple.buf
+                    end
                 end
             end
+        elseif re == 0 then
+            break
         end
     end
 
