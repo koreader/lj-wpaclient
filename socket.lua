@@ -1,12 +1,13 @@
 local cur_path = (...):match("(.-)[^%(.|/)]+$")
 local ffi = require("ffi")
-if pcall(function() return ffi.C.AF_UNIX end) == false then
+local C = ffi.C
+if pcall(function() return C.AF_UNIX end) == false then
     require(cur_path..'consts_h')
 end
-if pcall(function() return ffi.C.socket end) == false then
+if pcall(function() return C.socket end) == false then
     require(cur_path..'socket_h')
 end
-if pcall(function() return ffi.C.poll end) == false then
+if pcall(function() return C.poll end) == false then
     require(cur_path..'poll_h')
 end
 
@@ -14,14 +15,14 @@ end
 local sockaddr_pt = ffi.typeof('struct sockaddr *')
 
 local Socket = {
-    AF_UNIX = ffi.C.AF_UNIX,
-    SOCK_DGRAM = ffi.C.SOCK_DGRAM,
+    AF_UNIX = C.AF_UNIX,
+    SOCK_DGRAM = C.SOCK_DGRAM,
     __index = {},
 }
 
 function Socket.new(domain, stype, protocol)
     local instance = {
-        fd = ffi.C.socket(domain, stype, protocol),
+        fd = C.socket(domain, stype, protocol),
     }
     if instance.fd < 0 then
         return nil
@@ -31,26 +32,26 @@ function Socket.new(domain, stype, protocol)
 end
 
 function Socket.__index:connect(saddr, saddr_type)
-    return ffi.C.connect(self.fd, ffi.cast(sockaddr_pt, saddr),
+    return C.connect(self.fd, ffi.cast(sockaddr_pt, saddr),
                          ffi.sizeof(saddr_type))
 end
 
 function Socket.__index:bind(saddr, saddr_type)
-    return ffi.C.bind(self.fd, ffi.cast(sockaddr_pt, saddr),
+    return C.bind(self.fd, ffi.cast(sockaddr_pt, saddr),
                       ffi.sizeof(saddr_type))
 end
 
 function Socket.__index:close()
-    return ffi.C.close(self.fd)
+    return C.close(self.fd)
 end
 
 function Socket.__index:send(buf, len, flags)
-    return ffi.C.send(self.fd, buf, len, flags)
+    return C.send(self.fd, buf, len, flags)
 end
 
 function Socket.__index:__recvfrom(buf, len, flags)
     --@TODO support for parsing (host, port) tuple 04.10 2014 (houqp)
-    local re = ffi.C.recvfrom(self.fd, buf, len, flags, nil, nil)
+    local re = C.recvfrom(self.fd, buf, len, flags, nil, nil)
     if re < 0 then
         return nil, re
     else
@@ -77,11 +78,11 @@ function Socket.__index:recvfromAll(flags, event_queue)
 
     local evs = ffi.new('struct pollfd[1]')
     evs[0].fd = self.fd
-    evs[0].events = ffi.C.POLLIN
+    evs[0].events = C.POLLIN
 
     while true do
-        re = ffi.C.poll(evs, 1, 1)
-        if re <= 0 or bit.band(evs[0].revents, ffi.C.POLLIN) == 0 then
+        re = C.poll(evs, 1, 1)
+        if re <= 0 or bit.band(evs[0].revents, C.POLLIN) == 0 then
             break
         else
             tuple, re = self:__recvfrom(buf, buf_len, flags)
@@ -106,7 +107,7 @@ function Socket.__index:recvfromAll(flags, event_queue)
 end
 
 function Socket.__index:closeOnError(msg)
-    ffi.C.close(self.fd)
+    C.close(self.fd)
     return msg
 end
 

@@ -4,7 +4,6 @@
 #include <poll.h>
 
 #include "ffi-cdecl.h"
-#include "ffi-cdecl-luajit.h"
 
 cdecl_const(AF_UNIX)
 cdecl_const(SOCK_DGRAM)

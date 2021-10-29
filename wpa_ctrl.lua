@@ -1,6 +1,7 @@
 local cur_path = (...):match("(.-)[^%(.|/)]+$")
-local ffi = require('ffi')
-local Socket = require(cur_path..'socket')
+local ffi = require("ffi")
+local C = ffi.C
+local Socket = require(cur_path .. "socket")
 
 local wpa_ctrl = {}
 
@@ -10,7 +11,7 @@ struct sockaddr_un {
   short unsigned int sun_family;
   char sun_path[108];
 };
-int unlink(const char *) __attribute__((__nothrow__, __leaf__));
+int unlink(const char *) __attribute__((nothrow, leaf));
 ]]
 local sockaddr_un_t = ffi.typeof('struct sockaddr_un')
 
@@ -130,7 +131,7 @@ end
 
 function wpa_ctrl.close(hdl)
     if hdl.recv_sock_path then
-        ffi.C.unlink(hdl.recv_sock_path)
+        C.unlink(hdl.recv_sock_path)
     end
     if hdl.sock then
         hdl.sock:close()

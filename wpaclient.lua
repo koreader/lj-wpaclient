@@ -1,4 +1,5 @@
 local ffi = require('ffi')
+local C = ffi.C
 local cur_path = (...):match("(.-)[^%(.|/)]+$")
 local wpa_ctrl = require(cur_path..'wpa_ctrl')
 
@@ -39,7 +40,7 @@ function WpaClient.__index:sendCmd(cmd, block)
         local re
         local cnt = 10
         while cnt > 0 and (data == nil or string.len(data)) do
-            ffi.C.sleep(1)
+            C.sleep(1)
             data, re = wpa_ctrl.readResponse(self.wc_hdl)
             if re > 0 then
                 break
@@ -170,7 +171,7 @@ function WpaClient.__index:scanThenGetResults()
 
         wait_cnt = wait_cnt - 1
         -- sleep for 1 second
-        ffi.C.poll(nil, 0, 1000)
+        C.poll(nil, 0, 1000)
     end
 
     if not was_attached then
