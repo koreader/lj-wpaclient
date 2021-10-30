@@ -244,6 +244,8 @@ function WpaClient.__index:detach()
 end
 
 function WpaClient.__index:readEvent()
+    print("WpaClient.__index:readEvent")
+    print(debug.traceback())
     wpa_ctrl.readResponse(self.wc_hdl)
     return wpa_ctrl.readEvent(self.wc_hdl)
 end

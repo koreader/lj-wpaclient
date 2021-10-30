@@ -21,19 +21,19 @@ math.randomseed(os.time())
 local event_mt = {__index = {}}
 
 function event_mt.__index:isAuthSuccessful()
-    return (string.find(self.msg, 'CTRL%-EVENT%-CONNECTED')
-            or string.match(self.msg, '%w+: Key negotiation completed with (.+)') ~= nil)
+    return (string.find(self.msg, '^CTRL%-EVENT%-CONNECTED')
+            or string.match(self.msg, '^%w+: Key negotiation completed with (.+)$') ~= nil)
 end
 
 function event_mt.__index:isScanEvent()
     return (self.msg == 'WPS-AP-AVAILABLE'
             or self.msg == 'CTRL-EVENT-SCAN-RESULTS'
-            or string.match(self.msg, 'CTRL%-EVENT%-BSS%-%w+ %d+ .*') ~= nil)
+            or string.match(self.msg, '^CTRL%-EVENT%-BSS%-%w+ %d+ .*$') ~= nil)
 end
 
 function event_mt.__index:isAuthFailed()
-    return (string.match(self.msg, 'Authentication with (.-) timed out') ~= nil
-            or self.msg == 'CTRL-EVENT-DISCONNECTED - Disconnect event - remove keys')
+    return (string.find(self.msg, '^CTRL%-EVENT%-DISCONNECTED')
+            or string.match(self.msg, '^Authentication with (.-) timed out$') ~= nil)
 end
 
 local ev_lv2str = {
@@ -43,29 +43,36 @@ local ev_lv2str = {
     ['3'] = 'WARNING',
     ['4'] = 'ERROR',
 }
-local MAX_EV_QUEUE_SZ = 5000
+local MAX_EV_QUEUE_SZ = 1024
 local event_queue_mt = {__index = {}}
 
 function event_queue_mt.__index:parse(ev_str)
+    print("event_queue_mt.__index:parse", ev_str)
     local lvl, msg = string.match(ev_str, '^<(%d)>(.-)%s*$')
     if not lvl then
+        print("failed to parse")
         -- TODO: log error
         return
     end
     local ev = {lvl = ev_lv2str[lvl], msg = msg}
     setmetatable(ev, event_mt)
+    print("ev:", ev.lvl, ev.msg)
     self:push(ev)
 end
 
 function event_queue_mt.__index:push(ele)
+    print("event_queue_mt.__index:push", ele.msg)
     if #self.queue >= MAX_EV_QUEUE_SZ then
+        print("overflow, dropped oldest")
         table.remove(self.queue, 1)
     end
     table.insert(self.queue, ele)
 end
 
 function event_queue_mt.__index:pop()
-    return table.remove(self.queue)
+    local ele = table.remove(self.queue)
+    print("event_queue_mt.__index:pop", ele and ele.msg or "nil")
+    return ele
 end
 
 local function new_event_queue()
@@ -153,6 +160,7 @@ function wpa_ctrl.request(hdl, cmd)
 end
 
 function wpa_ctrl.readResponse(hdl)
+    print("wpa_ctrl.readResponse")
     local data, re = hdl.sock:recvfromAll(0, hdl.event_queue)
     return data.buf, re
 end
@@ -167,6 +175,7 @@ function wpa_ctrl.attach(hdl)
 end
 
 function wpa_ctrl.readEvent(hdl)
+    print("readEvent")
     return hdl.event_queue:pop()
 end
 
