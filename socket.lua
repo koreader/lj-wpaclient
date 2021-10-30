@@ -98,6 +98,7 @@ function Socket.__index:recvfromAll(flags, event_queue)
                     -- record unsolicited messages in event_queue for later use
                     event_queue:parse(tuple.buf)
                 else
+                    --- @todo: Switch to table.insert + table.concat
                     if not full_buf then
                         full_buf = tuple.buf
                     else
@@ -110,6 +111,7 @@ function Socket.__index:recvfromAll(flags, event_queue)
         end
     end
 
+    --- @todo: Hash is useless?
     return { buf = full_buf }, full_buf_len
 end
 
