@@ -37,9 +37,9 @@ function WpaClient.__index:sendCmd(cmd, block)
     local reply, err_msg = wpa_ctrl.command(self.wc_hdl, cmd)
     if block and (reply == nil or #reply == 0) then
         -- wait until we get a response
-        -- retry after a second, for 5s at most
+        -- retry after a second, for 10s at most
         local re
-        local cnt = 5
+        local cnt = 9
         while cnt > 0 and (reply == nil or #reply == 0) do
             print("sleeping, attempts left:", cnt)
             C.sleep(1)
