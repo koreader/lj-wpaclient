@@ -165,8 +165,9 @@ function WpaClient.__index:scanThenGetResults()
     local wait_cnt = 20
     while wait_cnt > 0 do
         for _, ev in ipairs(self:readAllEvents()) do
-            -- If we hit a network preferred by the system, we may get connected directly...
-            if ev:isAuthSuccessful() or ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
+            -- NOTE: If we hit a network preferred by the system, we may get connected directly,
+            --       but we'll handle that later...
+            if ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
                 print("Found scan results")
                 found_result = true
                 break
@@ -262,6 +263,7 @@ function WpaClient.__index:readAllEvents()
     wpa_ctrl.readResponse(self.wc_hdl)
 
     -- Drain the replies handled by Socket:recvAll in FILO order.
+    -- NOTE: This essentially reverses self.wc_hdl.event_queue...
     local evs = {}
     repeat
         local ev = wpa_ctrl.readEvent(self.wc_hdl)
