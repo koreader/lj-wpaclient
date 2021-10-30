@@ -37,9 +37,9 @@ function WpaClient.__index:sendCmd(cmd, block)
     local reply, err_msg = wpa_ctrl.command(self.wc_hdl, cmd)
     if block and (reply == nil or #reply == 0) then
         -- wait until we get a response
-        -- retry in a 1 second loop, max 10 seconds
+        -- retry after a second, for 5s at most
         local re
-        local cnt = 10
+        local cnt = 5
         while cnt > 0 and (reply == nil or #reply == 0) do
             print("sleeping, attempts left:", cnt)
             C.sleep(1)
@@ -259,10 +259,10 @@ end
 
 function WpaClient.__index:readAllEvents()
     print("WpaClient.__index:readAllEvents")
-    -- This will call Socket:recvAll
+    -- This will call Socket:recvAll, filling the event queue
     wpa_ctrl.readResponse(self.wc_hdl)
 
-    -- Drain the replies handled by Socket:recvAll in FILO order.
+    -- Drain the replies pushed in the event queue by Socket:recvAll in FILO order.
     -- NOTE: This essentially reverses self.wc_hdl.event_queue...
     local evs = {}
     repeat
