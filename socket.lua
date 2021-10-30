@@ -102,10 +102,12 @@ function Socket.__index:recvAll(flags, event_queue)
 
                 print("Socket.__index:recvAll:", re, data)
 
-                if string.sub(data, 1, 1) == "<"
-                   or string.sub(data, 1, 7) == "IFNAME=" then
+                if string.sub(data, 1, 1) == "<" then
                     -- Record unsolicited messages in event_queue for later use
                     event_queue:parse(data)
+                elseif string.sub(data, 1, 7) == "IFNAME=" then
+                    -- Ditto
+                    event_queue:parse_ifname(data)
                 else
                     table.insert(full_buf, data)
                 end
