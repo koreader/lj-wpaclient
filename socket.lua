@@ -11,6 +11,12 @@ end
 if pcall(function() return C.poll end) == false then
     require(cur_path .. "poll_h")
 end
+if pcall(function() return C.gettimeofday end) == false then
+    require(cur_path .. "time_h")
+end
+if pcall(function() return C.select end) == false then
+    require(cur_path .. "select_h")
+end
 
 
 local sockaddr_pt = ffi.typeof("struct sockaddr *")
@@ -96,6 +102,8 @@ function Socket.__index:recvAll(flags, event_queue)
                 full_buf_len = full_buf_len + re
 
                 if re < 0 then return nil, re end
+
+                print("Socket.__index:recvAll:", re, data)
 
                 if string.sub(data, 1, 1) == '<' then
                     -- Record unsolicited messages in event_queue for later use

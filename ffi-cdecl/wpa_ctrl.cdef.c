@@ -3,6 +3,7 @@
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <poll.h>
+#include <sys/select.h>
 
 #include "ffi-cdecl.h"
 
@@ -29,6 +30,14 @@ cdecl_func(unlink)
 cdecl_const(POLLIN)
 cdecl_struct(pollfd)
 cdecl_func(poll)
+
+cdecl_type(__fd_mask)
+cdecl_type(fd_set)
+cdecl_func(select)
+
+cdecl_type(time_t)
+cdecl_type(suseconds_t)
+cdecl_struct(timeval)
 
 cdecl_const(EINTR)
 cdecl_const(EISCONN)
