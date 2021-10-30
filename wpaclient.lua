@@ -241,13 +241,24 @@ function WpaClient.__index:getConnectedNetwork()
 end
 
 function WpaClient.__index:attach()
-    wpa_ctrl.attach(self.wc_hdl)
-    self.attached = true
+    local reply, err = wpa_ctrl.attach(self.wc_hdl)
+    if reply == "OK\n" then
+        self.attached = true
+    end
+end
+
+function WpaClient.__index:reattach()
+    local reply, err = wpa_ctrl.reattach(self.wc_hdl)
+    if reply == "OK\n" then
+        self.attached = true
+    end
 end
 
 function WpaClient.__index:detach()
-    wpa_ctrl.detach(self.wc_hdl)
-    self.attached = false
+    local reply, err = wpa_ctrl.detach(self.wc_hdl)
+    if reply == "OK\n" then
+        self.attached = false
+    end
 end
 
 function WpaClient.__index:readEvent()

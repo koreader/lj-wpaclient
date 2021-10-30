@@ -171,6 +171,11 @@ function wpa_ctrl.attach(hdl)
     return data, re
 end
 
+function wpa_ctrl.reattach(hdl)
+    local data, re = wpa_ctrl.request(hdl, "REATTACH")
+    return data, re
+end
+
 function wpa_ctrl.readEvent(hdl)
     print("readEvent")
     return hdl.event_queue:pop()
