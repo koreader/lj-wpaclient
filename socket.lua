@@ -96,7 +96,30 @@ function Socket.__index:close()
 end
 
 function Socket.__index:send(buf, len, flags)
-    return C.send(self.fd, buf, len, flags)
+    local pos = 0
+    while len > pos do
+        local nw = C.send(self.fd, buf + pos, len - pos, bit.bor(flags, C.MSG_NOSIGNAL))
+        if nw == -1 then
+            local errno = ffi.errno()
+            if errno ~= C.EINTR then
+                if errno == C.EAGAIN then
+                    local pfd = ffi.new("struct pollfd")
+                    pfd.fd = self.fd
+                    pfd.events = C.POLLOUT
+
+                    C.poll(pfd, 1, -1)
+                    -- Back to send
+                else
+                    -- Actual error :(
+                    return -1
+                end
+            end
+            -- EINTR: Back to send
+        else
+            pos = pos + nw
+        end
+    end
+    return pos
 end
 
 function Socket.__index:recv(buf, len, flags)
@@ -116,19 +139,19 @@ function Socket.__index:recvAll(flags, event_queue)
     local full_buf = {}
     local full_buf_len = 0
 
-    local evs = ffi.new("struct pollfd[1]")
-    evs[0].fd = self.fd
-    evs[0].events = C.POLLIN
+    local pfd = ffi.new("struct pollfd")
+    pfd.fd = self.fd
+    pfd.events = C.POLLIN
 
     while true do
-        local re = C.poll(evs, 1, 10 * 1000)
+        local re = C.poll(pfd, 1, 10 * 1000)
         if re == -1 then
             local errno = ffi.errno()
             if errno ~= C.EINTR then
                 return nil, re
             end
         elseif re > 0 then
-            if bit.band(evs[0].revents, POLLIN_SET) ~= 0 then
+            if bit.band(pfd.revents, POLLIN_SET) ~= 0 then
                 local data
                 data, re = self:recv(buf, buf_len, flags)
                 full_buf_len = full_buf_len + re
