@@ -153,6 +153,7 @@ function WpaClient.__index:getScanResults()
 end
 
 function WpaClient.__index:scanThenGetResults()
+    print("WpaClient.__index:scanThenGetResults")
     local was_attached = self.attached
     if not was_attached then
         self:attach()
@@ -256,9 +257,14 @@ function WpaClient.__index:readEvent()
 end
 
 function WpaClient.__index:readAllEvents()
+    print("WpaClient.__index:readAllEvents")
+    -- This will call recvAll, which already handles waiting
+    wpa_ctrl.readResponse(self.wc_hdl)
+
+    -- Drain the replies FILO
     local evs = {}
     repeat
-        local ev = self:readEvent()
+        local ev = wpa_ctrl.readEvent(self.wc_hdl)
         if ev ~= nil then
             table.insert(evs, ev)
         end
