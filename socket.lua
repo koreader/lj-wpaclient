@@ -177,7 +177,7 @@ function Socket.__index:recvAll(flags, event_queue)
                         table.insert(full_buf, data)
 
                         if re == 3 and data == "OK\n"
-                        or re == 5 and data == "FAIL\n" then
+                        or data:sub(1, 4) == "FAIL" then
                             -- We're done
                             break
                         end
