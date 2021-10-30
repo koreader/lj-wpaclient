@@ -167,7 +167,8 @@ function wpa_ctrl.command(hdl, cmd)
 end
 
 function wpa_ctrl.attach(hdl)
-    wpa_ctrl.request(hdl, "ATTACH")
+    local data, re = wpa_ctrl.request(hdl, "ATTACH")
+    return data, re
 end
 
 function wpa_ctrl.readEvent(hdl)
@@ -176,7 +177,8 @@ function wpa_ctrl.readEvent(hdl)
 end
 
 function wpa_ctrl.detach(hdl)
-    wpa_ctrl.request(hdl, "DETACH")
+    local data, re = wpa_ctrl.request(hdl, "DETACH")
+    return data, re
 end
 
 
