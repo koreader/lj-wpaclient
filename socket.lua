@@ -133,6 +133,7 @@ function Socket.__index:recv(buf, len, flags)
 end
 
 function Socket.__index:recvAll(flags, event_queue)
+    pritn("Entered Socket.__index:recvAll")
     -- NOTE: Length stolen from https://w1.fi/cgit/hostap/tree/wpa_supplicant/ctrl_iface.h#n15
     local buf_len = 8192 + 1
     local buf = ffi.new("unsigned char[?]", buf_len)
@@ -150,24 +151,30 @@ function Socket.__index:recvAll(flags, event_queue)
             if errno ~= C.EINTR then
                 return nil, re
             end
+            -- EINTR: Back to poll
         elseif re > 0 then
             if bit.band(pfd.revents, POLLIN_SET) ~= 0 then
                 local data
                 data, re = self:recv(buf, buf_len, flags)
-                full_buf_len = full_buf_len + re
-
-                if re < 0 then return nil, re end
-
-                print("Socket.__index:recvAll:", re, data)
-
-                if string.sub(data, 1, 1) == "<" then
-                    -- Record unsolicited messages in event_queue for later use
-                    event_queue:parse(data)
-                elseif string.sub(data, 1, 7) == "IFNAME=" then
-                    -- Ditto
-                    event_queue:parse_ifname(data)
+                if re < 0 then
+                    local errno == ffi.errno()
+                    if errno ~= C.EINTR and errno ~= C.EAGAIN then
+                        return nil, re end
+                    end
+                    -- EINTR or EAGAIN: Back to poll
                 else
-                    table.insert(full_buf, data)
+                    full_buf_len = full_buf_len + re
+                    print("Socket.__index:recvAll:", re, data)
+
+                    if string.sub(data, 1, 1) == "<" then
+                        -- Record unsolicited messages in event_queue for later use
+                        event_queue:parse(data)
+                    elseif string.sub(data, 1, 7) == "IFNAME=" then
+                        -- Ditto
+                        event_queue:parse_ifname(data)
+                    else
+                        table.insert(full_buf, data)
+                    end
                 end
             end
         elseif re == 0 then
