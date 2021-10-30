@@ -63,7 +63,7 @@ function event_queue_mt.__index:parse_ifname(ev_str)
     print("event_queue_mt.__index:parse_ifname", ev_str)
     local ev = {lvl = "INFO", msg = ev_str}
     setmetatable(ev, event_mt)
-    print("ev:", , ev.msg)
+    print("ev:", ev.lvl, ev.msg)
     self:push(ev)
 end
 
