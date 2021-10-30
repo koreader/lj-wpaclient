@@ -38,7 +38,7 @@ function Socket.__index:connect(saddr, saddr_type)
         if re == 0 then
             return 0
         elseif re == -1 then
-            if re == C.EISCONN
+            if re == C.EISCONN then
                 -- Already connected (connect() race)
                 return 0
             elseif re ~= C.EINTR then
