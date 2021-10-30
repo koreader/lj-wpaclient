@@ -91,17 +91,17 @@ function Socket.__index:recvAll(flags, event_queue)
             end
         elseif re > 0 then
             if bit.band(evs[0].revents, C.POLLIN) ~= 0 then
-                local tuple
-                tuple, re = self:recv(buf, buf_len, flags)
+                local data
+                data, re = self:recv(buf, buf_len, flags)
                 full_buf_len = full_buf_len + re
 
                 if re < 0 then return nil, re end
 
-                if string.sub(tuple.buf, 1, 1) == '<' then
+                if string.sub(data, 1, 1) == '<' then
                     -- Record unsolicited messages in event_queue for later use
-                    event_queue:parse(tuple.buf)
+                    event_queue:parse(data)
                 else
-                    table.insert(full_buf, tuple.buf)
+                    table.insert(full_buf, data)
                 end
             end
         elseif re == 0 then
