@@ -1,7 +1,7 @@
-local ffi = require('ffi')
+local ffi = require("ffi")
 local C = ffi.C
 local cur_path = (...):match("(.-)[^%(.|/)]+$")
-local wpa_ctrl = require(cur_path..'wpa_ctrl')
+local wpa_ctrl = require(cur_path .. "wpa_ctrl")
 
 
 local function str_split(str, sep)
@@ -33,13 +33,15 @@ function WpaClient.new(s)
 end
 
 function WpaClient.__index:sendCmd(cmd, block)
+    print("WpaClient.__index:sendCmd",cmd, block)
     local data, err_msg = wpa_ctrl.command(self.wc_hdl, cmd)
-    if block and (data == nil or string.len(data) == 0) then
+    if block and (data == nil or #data == 0) then
         -- wait until we get a response
         -- retry in a 1 second loop, max 10 seconds
         local re
         local cnt = 10
-        while cnt > 0 and (data == nil or string.len(data)) do
+        while cnt > 0 and (data == nil or #data == 0) do
+            print("sleeping, attempts left:", cnt)
             C.sleep(1)
             data, re = wpa_ctrl.readResponse(self.wc_hdl)
             if re > 0 then
@@ -55,17 +57,17 @@ function WpaClient.__index:sendCmd(cmd, block)
 end
 
 function WpaClient.__index:getInterfaces()
-    local re_str = self:sendCmd('INTERFACES', true)
-    return str_split(re_str, '\n')
+    local re_str = self:sendCmd("INTERFACES", true)
+    return str_split(re_str, "\n")
 end
 
 function WpaClient.__index:listNetworks()
     local results = {}
-    local re_str = self:sendCmd('LIST_NETWORKS', true)
-    local lst = str_split(re_str, '\n')
+    local re_str = self:sendCmd("LIST_NETWORKS", true)
+    local lst = str_split(re_str, "\n")
     table.remove(lst, 1)  -- remove output table header
     for _,v in ipairs(lst) do
-        local splits = str_split(v, '\t')
+        local splits = str_split(v, "\t")
         table.insert(results, {
             id = splits[1],
             ssid = splits[2],
@@ -79,14 +81,14 @@ end
 function WpaClient.__index:getCurrentNetwork()
     local networks = self:listNetworks()
     for _,nw in ipairs(networks) do
-        if nw.flags and string.find(nw.flags, '%[CURRENT%]') then
+        if nw.flags and string.find(nw.flags, "%[CURRENT%]") then
             return nw
         end
     end
 end
 
 function WpaClient.__index:doScan()
-    local re, err = self:sendCmd('SCAN', true)
+    local re, err = self:sendCmd("SCAN", true)
     return str_strip(re), err
 end
 
@@ -128,12 +130,12 @@ end
 
 function WpaClient.__index:getScanResults()
     local results = {}
-    local re_str, err = self:sendCmd('SCAN_RESULTS', true)
+    local re_str, err = self:sendCmd("SCAN_RESULTS", true)
     if err then return nil, err end
 
-    local lst = str_split(re_str, '\n')
+    local lst = str_split(re_str, "\n")
     for _,v in ipairs(lst) do
-        local splits = str_split(v, '\t')
+        local splits = str_split(v, "\t")
 
         if splits[5] then  -- ignore lines which don't split into 5 parts
             local network = {
@@ -166,7 +168,7 @@ function WpaClient.__index:scanThenGetResults()
             if ev:isAuthSuccessful() then
                 found_result = true
                 break
-            elseif ev.msg == 'CTRL-EVENT-SCAN-RESULTS' or ev:isAuthSuccessful() then
+            elseif ev.msg == "CTRL-EVENT-SCAN-RESULTS" or ev:isAuthSuccessful() then
                 found_result = true
                 break
             end
@@ -186,47 +188,47 @@ end
 
 function WpaClient.__index:getStatus()
     local results = {}
-    local re_str, err = self:sendCmd('STATUS', true)
+    local re_str, err = self:sendCmd("STATUS", true)
     if err then return nil, err end
 
-    local lst = str_split(re_str, '\n')
+    local lst = str_split(re_str, "\n")
     for _,v in ipairs(lst) do
-        local eqs, eqe = v:find('=')
+        local eqs, eqe = v:find("=")
         results[v:sub(1, eqs-1)] = v:sub(eqe+1)
     end
     return results
 end
 
 function WpaClient.__index:addNetwork()
-    local re, err = self:sendCmd('ADD_NETWORK', true)
+    local re, err = self:sendCmd("ADD_NETWORK", true)
     return str_strip(re), err
 end
 
 function WpaClient.__index:removeNetwork(id)
-    local re, err = self:sendCmd('REMOVE_NETWORK '..id, true)
+    local re, err = self:sendCmd("REMOVE_NETWORK " .. id, true)
     return str_strip(re), err
 end
 
 function WpaClient.__index:disableNetworkByID(id)
-    local re, err = self:sendCmd('DISABLE_NETWORK '..id, true)
+    local re, err = self:sendCmd("DISABLE_NETWORK " .. id, true)
     return re, err
 end
 
 function WpaClient.__index:setNetwork(id, key, value)
     local re, err = self:sendCmd(
-        string.format('SET_NETWORK %d %s %s', id, key, value),
+        string.format("SET_NETWORK %d %s %s", id, key, value),
         true)  -- set block to true
     return str_strip(re), err
 end
 
 function WpaClient.__index:enableNetworkByID(id)
-    local re, err = self:sendCmd('ENABLE_NETWORK '..id, true)
+    local re, err = self:sendCmd("ENABLE_NETWORK " .. id, true)
     return re, err
 end
 
 function WpaClient.__index:getConnectedNetwork()
     local re = self:getStatus()
-    if re.wpa_state == 'COMPLETED' then
+    if re.wpa_state == "COMPLETED" then
         return {
             id = re.id,
             ssid = re.ssid,
@@ -266,7 +268,7 @@ function WpaClient.__index:readAllEvents()
 end
 
 function WpaClient.__index:disconnect()
-    self:sendCmd('DISCONNECT')
+    self:sendCmd("DISCONNECT")
 end
 
 function WpaClient.__index:close()

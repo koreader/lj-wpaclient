@@ -145,11 +145,11 @@ function wpa_ctrl.request(hdl, cmd)
     local data, re
     re = hdl.sock:send(cmd, #cmd, 0)
     if re < #cmd then
-        return nil, 'Failed to send command: '..cmd
+        return nil, "Failed to send command: " .. cmd
     end
     data, re = hdl.sock:recvAll(0, hdl.event_queue)
     if re < 0 then
-        return nil, 'No response from wpa_supplicant'
+        return nil, "No response from wpa_supplicant"
     end
     return data
 end
@@ -166,7 +166,7 @@ function wpa_ctrl.command(hdl, cmd)
 end
 
 function wpa_ctrl.attach(hdl)
-    wpa_ctrl.request(hdl, 'ATTACH')
+    wpa_ctrl.request(hdl, "ATTACH")
 end
 
 function wpa_ctrl.readEvent(hdl)
@@ -175,7 +175,7 @@ function wpa_ctrl.readEvent(hdl)
 end
 
 function wpa_ctrl.detach(hdl)
-    wpa_ctrl.request(hdl, 'DETACH')
+    wpa_ctrl.request(hdl, "DETACH")
 end
 
 
