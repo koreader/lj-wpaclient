@@ -166,7 +166,7 @@ function WpaClient.__index:scanThenGetResults()
     while wait_cnt > 0 do
         for _, ev in ipairs(self:readAllEvents()) do
             -- NOTE: If we hit a network preferred by the system, we may get connected directly,
-            --       but we'll handle that later...
+            --       but we'll handle that later in WpaSupplicant:getNetworkList...
             if ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
                 print("Found scan results")
                 found_result = true
