@@ -258,10 +258,10 @@ end
 
 function WpaClient.__index:readAllEvents()
     print("WpaClient.__index:readAllEvents")
-    -- This will call recvAll, which already handles waiting
+    -- This will call Socket:recvAll
     wpa_ctrl.readResponse(self.wc_hdl)
 
-    -- Drain the replies FILO
+    -- Drain the replies handled by Socket:recvAll in FILO order.
     local evs = {}
     repeat
         local ev = wpa_ctrl.readEvent(self.wc_hdl)

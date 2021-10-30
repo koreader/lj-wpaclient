@@ -132,13 +132,14 @@ function Socket.__index:recv(buf, len, flags)
     end
 end
 
-function Socket.__index:isReady()
+function Socket.__index:canRead()
     local pfd = ffi.new("struct pollfd")
     pfd.fd = self.fd
     pfd.events = C.POLLIN
 
     local re = C.poll(pfd, 1, 0)
     if re > 0 and bit.band(pfd.revents, POLLIN_SET) ~= 0 then
+        -- We've got something to read!
         return true
     end
 
@@ -159,7 +160,9 @@ function Socket.__index:recvAll(flags, event_queue)
     pfd.events = C.POLLIN
 
     while true do
-        local re = C.poll(pfd, 1, 10 * 1000)
+        -- Timeout should be short, we handle retries at a higher level, where appropriate
+        -- (e.g., WpaClient:scanThenGetResults & WpaClient:sendCmd).
+        local re = C.poll(pfd, 1, 50)
         if re == -1 then
             local errno = ffi.errno()
             if errno ~= C.EINTR then
