@@ -160,9 +160,9 @@ function Socket.__index:recvAll(flags, event_queue)
     pfd.events = C.POLLIN
 
     while true do
-        -- Timeout should be short, we handle retries at a higher level, where appropriate
+        -- No timeout, we handle retries at a higher level, where appropriate
         -- (e.g., WpaClient:scanThenGetResults & WpaClient:sendCmd).
-        local re = C.poll(pfd, 1, 50)
+        local re = C.poll(pfd, 1, 0)
         if re == -1 then
             local errno = ffi.errno()
             if errno ~= C.EINTR then
@@ -201,7 +201,7 @@ function Socket.__index:recvAll(flags, event_queue)
                 end
             end
         elseif re == 0 then
-            -- Timeout
+            -- Timeout or nothing to read
             break
         end
     end
