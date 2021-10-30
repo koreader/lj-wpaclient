@@ -133,7 +133,7 @@ function Socket.__index:recv(buf, len, flags)
 end
 
 function Socket.__index:recvAll(flags, event_queue)
-    pritn("Entered Socket.__index:recvAll")
+    print("Entered Socket.__index:recvAll")
     -- NOTE: Length stolen from https://w1.fi/cgit/hostap/tree/wpa_supplicant/ctrl_iface.h#n15
     local buf_len = 8192 + 1
     local buf = ffi.new("unsigned char[?]", buf_len)
@@ -157,9 +157,9 @@ function Socket.__index:recvAll(flags, event_queue)
                 local data
                 data, re = self:recv(buf, buf_len, flags)
                 if re < 0 then
-                    local errno == ffi.errno()
+                    local errno = ffi.errno()
                     if errno ~= C.EINTR and errno ~= C.EAGAIN then
-                        return nil, re end
+                        return nil, re
                     end
                     -- EINTR or EAGAIN: Back to poll
                 else

@@ -43,4 +43,5 @@ cdecl_type(suseconds_t)
 cdecl_struct(timeval)
 
 cdecl_const(EINTR)
+cdecl_const(EAGAIN)
 cdecl_const(EISCONN)
