@@ -98,7 +98,7 @@ end
 function Socket.__index:send(buf, len, flags)
     local pos = 0
     while len > pos do
-        local nw = C.send(self.fd, buf + pos, len - pos, bit.bor(flags, C.MSG_NOSIGNAL))
+        local nw = C.send(self.fd, pos == 0 and buf or buf:sub(1 + pos), len - pos, bit.bor(flags, C.MSG_NOSIGNAL))
         if nw == -1 then
             local errno = ffi.errno()
             if errno ~= C.EINTR then
@@ -166,10 +166,10 @@ function Socket.__index:recvAll(flags, event_queue)
                     full_buf_len = full_buf_len + re
                     print("Socket.__index:recvAll:", re, data)
 
-                    if string.sub(data, 1, 1) == "<" then
+                    if data:sub(1, 1) == "<" then
                         -- Record unsolicited messages in event_queue for later use
                         event_queue:parse(data)
-                    elseif string.sub(data, 1, 7) == "IFNAME=" then
+                    elseif data:sub(1, 7) == "IFNAME=" then
                         -- Ditto
                         event_queue:parse_ifname(data)
                     else
