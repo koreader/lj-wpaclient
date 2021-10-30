@@ -1,18 +1,19 @@
 local cur_path = (...):match("(.-)[^%(.|/)]+$")
 local ffi = require("ffi")
 local C = ffi.C
+-- We may already have some of these thanks to koreader-base ffi modules, hence the conditional loading
 if pcall(function() return C.AF_UNIX end) == false then
-    require(cur_path..'consts_h')
+    require(cur_path .. "consts_h")
 end
 if pcall(function() return C.socket end) == false then
-    require(cur_path..'socket_h')
+    require(cur_path .. "socket_h")
 end
 if pcall(function() return C.poll end) == false then
-    require(cur_path..'poll_h')
+    require(cur_path .. "poll_h")
 end
 
 
-local sockaddr_pt = ffi.typeof('struct sockaddr *')
+local sockaddr_pt = ffi.typeof("struct sockaddr *")
 
 local Socket = {
     AF_UNIX = C.AF_UNIX,
@@ -22,7 +23,7 @@ local Socket = {
 
 function Socket.new(domain, stype, protocol)
     local instance = {
-        fd = C.socket(domain, stype, protocol),
+        fd = C.socket(domain, bit.bor(stype, C.SOCK_NONBLOCK, C.SOCK_CLOEXEC), protocol),
     }
     if instance.fd < 0 then
         return nil
@@ -32,13 +33,24 @@ function Socket.new(domain, stype, protocol)
 end
 
 function Socket.__index:connect(saddr, saddr_type)
-    return C.connect(self.fd, ffi.cast(sockaddr_pt, saddr),
-                         ffi.sizeof(saddr_type))
+    while true do
+        local re = C.connect(self.fd, ffi.cast(sockaddr_pt, saddr), ffi.sizeof(saddr_type))
+        if re == 0 then
+            return 0
+        elseif re == -1 then
+            if re == C.EISCONN
+                -- Already connected (connect() race)
+                return 0
+            elseif re ~= C.EINTR then
+                -- Actual error, otherwise, retry on EINTR
+                return re
+            end
+        end
+    end
 end
 
 function Socket.__index:bind(saddr, saddr_type)
-    return C.bind(self.fd, ffi.cast(sockaddr_pt, saddr),
-                      ffi.sizeof(saddr_type))
+    return C.bind(self.fd, ffi.cast(sockaddr_pt, saddr), ffi.sizeof(saddr_type))
 end
 
 function Socket.__index:close()

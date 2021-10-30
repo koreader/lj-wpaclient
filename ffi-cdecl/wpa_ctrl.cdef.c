@@ -6,9 +6,13 @@
 
 #include "ffi-cdecl.h"
 
-cdecl_const(EINTR)
+// NOTE: Some of this may already be provided by our koreader-base ffi modules (in particular, posix),
+//       hence the conditional loading in socket.lua
+
 cdecl_const(AF_UNIX)
 cdecl_const(SOCK_DGRAM)
+cdecl_const(SOCK_NONBLOCK)
+cdecl_const(SOCK_CLOEXEC)
 cdecl_const(MSG_PEEK)
 cdecl_struct(sockaddr_un)
 cdecl_struct(sockaddr)
@@ -24,3 +28,6 @@ cdecl_func(unlink)
 cdecl_const(POLLIN)
 cdecl_struct(pollfd)
 cdecl_func(poll)
+
+cdecl_const(EINTR)
+cdecl_const(EISCONN)

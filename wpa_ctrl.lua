@@ -13,42 +13,40 @@ struct sockaddr_un {
 };
 int unlink(const char *) __attribute__((nothrow, leaf));
 ]]
-local sockaddr_un_t = ffi.typeof('struct sockaddr_un')
 
-math.randomseed(os.time())
-
+local sockaddr_un_t = ffi.typeof("struct sockaddr_un")
 
 local event_mt = {__index = {}}
 
 function event_mt.__index:isAuthSuccessful()
-    return (string.find(self.msg, '^CTRL%-EVENT%-CONNECTED')
-            or string.match(self.msg, '^%w+: Key negotiation completed with (.+)$') ~= nil)
+    return (string.find(self.msg, "^CTRL%-EVENT%-CONNECTED")
+            or string.match(self.msg, "^%w+: Key negotiation completed with (.+)$") ~= nil)
 end
 
 function event_mt.__index:isScanEvent()
-    return (self.msg == 'WPS-AP-AVAILABLE'
-            or self.msg == 'CTRL-EVENT-SCAN-RESULTS'
-            or string.match(self.msg, '^CTRL%-EVENT%-BSS%-%w+ %d+ .*$') ~= nil)
+    return (self.msg == "WPS-AP-AVAILABLE"
+            or self.msg == "CTRL-EVENT-SCAN-RESULTS"
+            or string.match(self.msg, "^CTRL%-EVENT%-BSS%-%w+ %d+ .*$") ~= nil)
 end
 
 function event_mt.__index:isAuthFailed()
-    return (string.find(self.msg, '^CTRL%-EVENT%-DISCONNECTED')
-            or string.match(self.msg, '^Authentication with (.-) timed out$') ~= nil)
+    return (string.find(self.msg, "^CTRL%-EVENT%-DISCONNECTED")
+            or string.match(self.msg, "^Authentication with (.-) timed out$") ~= nil)
 end
 
 local ev_lv2str = {
-    ['0'] = 'MSGDUMP',
-    ['1'] = 'DEBUG',
-    ['2'] = 'INFO',
-    ['3'] = 'WARNING',
-    ['4'] = 'ERROR',
+    ["0"] = "MSGDUMP",
+    ["1"] = "DEBUG",
+    ["2"] = "INFO",
+    ["3"] = "WARNING",
+    ["4"] = "ERROR",
 }
 local MAX_EV_QUEUE_SZ = 1024
 local event_queue_mt = {__index = {}}
 
 function event_queue_mt.__index:parse(ev_str)
     print("event_queue_mt.__index:parse", ev_str)
-    local lvl, msg = string.match(ev_str, '^<(%d)>(.-)%s*$')
+    local lvl, msg = string.match(ev_str, "^<(%d)>(.-)%s*$")
     if not lvl then
         print("failed to parse")
         -- TODO: log error
@@ -83,7 +81,7 @@ end
 
 
 local function file_exists(fn)
-    local f = io.open(fn, 'r')
+    local f = io.open(fn, "re")
     if f ~= nil then
         io.close(f)
         return true
@@ -102,18 +100,9 @@ function wpa_ctrl.open(ctrl_sock)
         event_queue = nil,
     }
 
-    -- we only try ten times before give up
-    for _=1, 10 do
-        hdl.recv_sock_path = '/tmp/lj-wpaclient-'..math.random(0, 100000)
-        if not file_exists(hdl.recv_sock_path) then
-            break
-        else
-            hdl.recv_sock_path = nil
-        end
-    end
-    if not hdl.recv_sock_path then
-        return nil, "Failed to create temporary unix socket file"
-    end
+    -- Clean up potentially stale socket
+    hdl.recv_sock_path = "/tmp/lj-wpaclient-" .. tostring(C.getpid())
+    C.unlink(hdl.recv_sock_path)
     ffi.copy(hdl.local_saddr.sun_path, hdl.recv_sock_path)
     ffi.copy(hdl.dest_saddr.sun_path, ctrl_sock)
 
@@ -123,13 +112,11 @@ function wpa_ctrl.open(ctrl_sock)
     end
     re = hdl.sock:bind(hdl.local_saddr, sockaddr_un_t)
     if re < 0 then
-        return nil, hdl.sock:closeOnError(
-            'Failed to bind socket: '..hdl.recv_sock_path)
+        return nil, hdl.sock:closeOnError("Failed to bind socket: " .. hdl.recv_sock_path)
     end
     re = hdl.sock:connect(hdl.dest_saddr, sockaddr_un_t)
     if re < 0 then
-        return nil, hdl.sock:closeOnError(
-            'Failed to connect to wpa_supplicant control socket: '..ctrl_sock)
+        return nil, hdl.sock:closeOnError("Failed to connect to wpa_supplicant control socket: " .. ctrl_sock)
     end
 
     hdl.event_queue = new_event_queue()
