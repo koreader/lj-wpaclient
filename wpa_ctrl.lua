@@ -142,6 +142,7 @@ function wpa_ctrl.close(hdl)
 end
 
 function wpa_ctrl.request(hdl, cmd)
+    print("wpa_ctrl.request", cmd)
     local data, re
     re = hdl.sock:send(cmd, #cmd, 0)
     if re < #cmd then

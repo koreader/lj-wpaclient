@@ -134,6 +134,7 @@ end
 
 function Socket.__index:recvAll(flags, event_queue)
     print("Entered Socket.__index:recvAll")
+    print(debug.traceback())
     -- NOTE: Length stolen from https://w1.fi/cgit/hostap/tree/wpa_supplicant/ctrl_iface.h#n15
     local buf_len = 8192 + 1
     local buf = ffi.new("unsigned char[?]", buf_len)
@@ -174,6 +175,12 @@ function Socket.__index:recvAll(flags, event_queue)
                         event_queue:parse_ifname(data)
                     else
                         table.insert(full_buf, data)
+
+                        if re == 3 and data == "OK\n"
+                        or re == 5 and data == "FAIL\n" then
+                            -- We're done
+                            break
+                        end
                     end
                 end
             end
