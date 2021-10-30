@@ -132,6 +132,19 @@ function Socket.__index:recv(buf, len, flags)
     end
 end
 
+function Socket.__index:isReady()
+    local pfd = ffi.new("struct pollfd")
+    pfd.fd = self.fd
+    pfd.events = C.POLLIN
+
+    local re = C.poll(pfd, 1, 0)
+    if re > 0 and bit.band(pfd.revents, POLLIN_SET) ~= 0 then
+        return true
+    end
+
+    return false
+end
+
 function Socket.__index:recvAll(flags, event_queue)
     print("Entered Socket.__index:recvAll")
     print(debug.traceback())
@@ -189,6 +202,7 @@ function Socket.__index:recvAll(flags, event_queue)
             break
         end
     end
+    print("Returning from Socket.__index:recvAll", full_buf_len)
 
     return table.concat(full_buf), full_buf_len
 end

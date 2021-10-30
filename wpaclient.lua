@@ -165,10 +165,8 @@ function WpaClient.__index:scanThenGetResults()
     while wait_cnt > 0 do
         for _, ev in ipairs(self:readAllEvents()) do
             -- If we hit a network preferred by the system, we may get connected directly...
-            if ev:isAuthSuccessful() then
-                found_result = true
-                break
-            elseif ev.msg == "CTRL-EVENT-SCAN-RESULTS" or ev:isAuthSuccessful() then
+            if ev:isAuthSuccessful() or ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
+                print("Found scan results")
                 found_result = true
                 break
             end
@@ -177,7 +175,8 @@ function WpaClient.__index:scanThenGetResults()
 
         wait_cnt = wait_cnt - 1
         -- sleep for 1 second
-        C.poll(nil, 0, 1000)
+        print("Waiting 1 more second for scan results")
+        C.sleep(1)
     end
 
     if not was_attached then
