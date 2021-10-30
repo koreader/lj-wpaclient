@@ -3,8 +3,6 @@ local ffi = require("ffi")
 local C = ffi.C
 local Socket = require(cur_path .. "socket")
 
-local wpa_ctrl = {}
-
 ffi.cdef[[
 unsigned int sleep(unsigned int seconds);
 struct sockaddr_un {
@@ -14,9 +12,12 @@ struct sockaddr_un {
 int unlink(const char *) __attribute__((nothrow, leaf));
 ]]
 
+
 local sockaddr_un_t = ffi.typeof("struct sockaddr_un")
 
 local event_mt = {__index = {}}
+
+local wpa_ctrl = {}
 
 function event_mt.__index:isAuthSuccessful()
     return (string.find(self.msg, "^CTRL%-EVENT%-CONNECTED")
@@ -133,28 +134,27 @@ function wpa_ctrl.close(hdl)
 end
 
 function wpa_ctrl.request(hdl, cmd)
-    local re, data
+    local data, re
     re = hdl.sock:send(cmd, #cmd, 0)
     if re < #cmd then
         return nil, 'Failed to send command: '..cmd
     end
-    -- TODO: pass proper flags to recvfromAll
-    data, re = hdl.sock:recvfromAll(0, hdl.event_queue)
+    data, re = hdl.sock:recvAll(0, hdl.event_queue)
     if re < 0 then
         return nil, 'No response from wpa_supplicant'
     end
-    return data.buf
+    return data
 end
 
 function wpa_ctrl.readResponse(hdl)
     print("wpa_ctrl.readResponse")
-    local data, re = hdl.sock:recvfromAll(0, hdl.event_queue)
-    return data.buf, re
+    local data, re = hdl.sock:recvAll(0, hdl.event_queue)
+    return data, re
 end
 
 function wpa_ctrl.command(hdl, cmd)
-    local buf, re = wpa_ctrl.request(hdl, cmd)
-    return buf, re
+    local data, re = wpa_ctrl.request(hdl, cmd)
+    return data, re
 end
 
 function wpa_ctrl.attach(hdl)

@@ -61,37 +61,28 @@ function Socket.__index:send(buf, len, flags)
     return C.send(self.fd, buf, len, flags)
 end
 
-function Socket.__index:__recvfrom(buf, len, flags)
+function Socket.__index:recv(buf, len, flags)
     --- @TODO support for parsing (host, port) tuple 04.10 2014 (houqp)
-    local re = C.recvfrom(self.fd, buf, len, flags, nil, nil)
+    local re = C.recv(self.fd, buf, len, flags)
     if re < 0 then
         return nil, re
     else
-        return {buf = ffi.string(buf, re)}, re
+        return ffi.string(buf, re), re
     end
 end
 
-function Socket.__index:recvfrom(len, flags)
-    -- TODO: reuse buffer here to reduce GC pressure
-    local buf = ffi.new('char[?]', len)
-    local tuple, re = self:__recvfrom(buf, len, flags)
-    return tuple, re
-end
-
-function Socket.__index:recvfromAll(flags, event_queue)
-    -- FIXME: hard coded buf length stolen from:
-    -- wpa_supplicant/ctrl_iface_unix.c
+function Socket.__index:recvAll(flags, event_queue)
+    -- NOTE: Length stolen from https://w1.fi/cgit/hostap/tree/wpa_supplicant/ctrl_iface.h#n15
     local buf_len = 8192 + 1
-    local buf = ffi.new('char[?]', buf_len)
-    local full_buf = ''
+    local buf = ffi.new("unsigned char[?]", buf_len)
+    local full_buf = {}
     local full_buf_len = 0
 
-    local evs = ffi.new('struct pollfd[1]')
+    local evs = ffi.new("struct pollfd[1]")
     evs[0].fd = self.fd
     evs[0].events = C.POLLIN
 
     while true do
-        --- @todo: Switch to non-blocking?
         local re = C.poll(evs, 1, 1)
         if re == -1 then
             local errno = ffi.errno()
@@ -101,21 +92,16 @@ function Socket.__index:recvfromAll(flags, event_queue)
         elseif re > 0 then
             if bit.band(evs[0].revents, C.POLLIN) ~= 0 then
                 local tuple
-                tuple, re = self:__recvfrom(buf, buf_len, flags)
+                tuple, re = self:recv(buf, buf_len, flags)
                 full_buf_len = full_buf_len + re
 
                 if re < 0 then return nil, re end
 
                 if string.sub(tuple.buf, 1, 1) == '<' then
-                    -- record unsolicited messages in event_queue for later use
+                    -- Record unsolicited messages in event_queue for later use
                     event_queue:parse(tuple.buf)
                 else
-                    --- @todo: Switch to table.insert + table.concat
-                    if not full_buf then
-                        full_buf = tuple.buf
-                    else
-                        full_buf = full_buf .. tuple.buf
-                    end
+                    table.insert(full_buf, tuple.buf)
                 end
             end
         elseif re == 0 then
@@ -123,8 +109,7 @@ function Socket.__index:recvfromAll(flags, event_queue)
         end
     end
 
-    --- @todo: Hash is useless?
-    return { buf = full_buf }, full_buf_len
+    return table.concat(full_buf), full_buf_len
 end
 
 function Socket.__index:closeOnError(msg)
