@@ -11,9 +11,6 @@ end
 if pcall(function() return C.poll end) == false then
     require(cur_path .. "poll_h")
 end
-if pcall(function() return C.gettimeofday end) == false then
-    require(cur_path .. "time_h")
-end
 if pcall(function() return C.select end) == false then
     require(cur_path .. "select_h")
 end
@@ -89,14 +86,14 @@ function Socket.__index:recvAll(flags, event_queue)
     evs[0].events = C.POLLIN
 
     while true do
-        local re = C.poll(evs, 1, 1)
+        local re = C.poll(evs, 1, 10 * 1000)
         if re == -1 then
             local errno = ffi.errno()
             if errno ~= C.EINTR then
-                break
+                return nil, re
             end
         elseif re > 0 then
-            if bit.band(evs[0].revents, C.POLLIN) ~= 0 then
+            if bit.band(evs[0].revents, C.POLLIN_SET) ~= 0 then
                 local data
                 data, re = self:recv(buf, buf_len, flags)
                 full_buf_len = full_buf_len + re
@@ -105,7 +102,8 @@ function Socket.__index:recvAll(flags, event_queue)
 
                 print("Socket.__index:recvAll:", re, data)
 
-                if string.sub(data, 1, 1) == '<' then
+                if string.sub(data, 1, 1) == "<"
+                   or string.sub(data, 1, 7) == "IFNAME=" then
                     -- Record unsolicited messages in event_queue for later use
                     event_queue:parse(data)
                 else
@@ -113,6 +111,7 @@ function Socket.__index:recvAll(flags, event_queue)
                 end
             end
         elseif re == 0 then
+            -- Timeout
             break
         end
     end

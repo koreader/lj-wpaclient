@@ -31,6 +31,8 @@ cdecl_const(POLLIN)
 cdecl_struct(pollfd)
 cdecl_func(poll)
 
+cdecl_const(POLLRDNORM)
+cdecl_const(POLLRDBAND)
 cdecl_type(__fd_mask)
 cdecl_type(fd_set)
 cdecl_func(select)

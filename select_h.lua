@@ -7,6 +7,9 @@ typedef struct {
   __fd_mask __fds_bits[32];
 } fd_set;
 int select(int, fd_set *restrict, fd_set *restrict, fd_set *restrict, struct timeval *restrict);
+
+static const int POLLRDNORM = 64;
+static const int POLLRDBAND = 128;
 ]]
 
 -- Most of this is handled via macros in C...
@@ -60,3 +63,6 @@ end
 #define __FD_ISSET(d, s) \
   ((__FDS_BITS (s)[__FD_ELT (d)] & __FD_MASK (d)) != 0)
 --]]
+
+-- To match FD_ISSET behavior with poll
+C.POLLIN_SET = bit.bor(C.POLLRDNORM, C.POLLRDBAND, C.POLLIN, C.POLLHUP, C.POLLERR)
