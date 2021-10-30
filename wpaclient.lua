@@ -195,7 +195,9 @@ function WpaClient.__index:getStatus()
     local lst = str_split(reply, "\n")
     for _,v in ipairs(lst) do
         local eqs, eqe = v:find("=")
-        results[v:sub(1, eqs-1)] = v:sub(eqe+1)
+        if eqs and eqe then
+            results[v:sub(1, eqs-1)] = v:sub(eqe+1)
+        end
     end
     return results
 end
