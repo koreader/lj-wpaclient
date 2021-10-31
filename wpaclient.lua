@@ -94,7 +94,7 @@ end
 
 function WpaClient.__index:doScan()
     local reply, err = self:sendCmd("SCAN", true)
-    print("WpaClient.__index:doScan", reply, err)
+    print("WpaClient.__index:doScan")
     print("reply:", reply)
     print("err:", err)
     if reply == nil then
@@ -175,9 +175,9 @@ function WpaClient.__index:scanThenGetResults()
     if not was_attached then
         self:attach()
     end
-    -- May harmlessly fail with FAIL-BUSY, so no need to check the reply.
-    local _, err = self:doScan()
-    if err then
+    -- May harmlessly fail with FAIL-BUSY
+    local reply, err = self:doScan()
+    if reply == nil then
         print("doScan failed")
         return nil, err
     end
