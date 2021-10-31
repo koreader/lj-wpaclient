@@ -191,8 +191,10 @@ function WpaClient.__index:scanThenGetResults()
         if found_result then break end
 
         wait_cnt = wait_cnt - 1
-        -- sleep for 1 second
+        -- Wait for new data from wpa_supplicant in steps of at most 1 second.
         print("Waiting 1 more second for scan results")
+        -- NOTE: I'm wary of simply doing a 20s poll, because we *may* receive events unrelated to the scan,
+        --       unlike in sendCmd...
         wpa_ctrl.waitForResponse(self.wc_hdl, 1 * 1000)
     end
 
