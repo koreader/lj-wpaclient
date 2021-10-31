@@ -49,8 +49,7 @@ function event_queue_mt.__index:parse(ev_str)
     print("event_queue_mt.__index:parse", ev_str)
     local lvl, msg = string.match(ev_str, "^<(%d)>(.-)%s*$")
     if not lvl then
-        print("failed to parse")
-        -- TODO: log error
+        print("wpa_ctrl failed to parse unsolicited message:", ev_str)
         return
     end
     local ev = {lvl = ev_lv2str[lvl], msg = msg}
