@@ -1,5 +1,3 @@
-local ffi = require("ffi")
-local C = ffi.C
 local cur_path = (...):match("(.-)[^%(.|/)]+$")
 local wpa_ctrl = require(cur_path .. "wpa_ctrl")
 
@@ -132,8 +130,10 @@ function network_mt.__index:getSignalQuality()
         -- Assume old-style WEXT 8-bit unsigned signal level
         val = val - 256                               -- Subtract 256 to convert to dBm
         val = dbm_to_qual(val)
+    --[[
     else
         -- Assume signal is already a "quality" percentage
+    --]]
     end
 
     return clamp(val, 0, 100)
@@ -171,7 +171,8 @@ function WpaClient.__index:scanThenGetResults()
     if not was_attached then
         self:attach()
     end
-    local data, err = self:doScan()
+    -- May harmlessly fail with FAIL-BUSY, so no need to check the reply.
+    local _, err = self:doScan()
     if err then
         return nil, err
     end
@@ -280,21 +281,21 @@ function WpaClient.__index:getConnectedNetwork()
 end
 
 function WpaClient.__index:attach()
-    local reply, err = wpa_ctrl.attach(self.wc_hdl)
+    local reply, _ = wpa_ctrl.attach(self.wc_hdl)
     if reply ~= nil and reply == "OK\n" then
         self.attached = true
     end
 end
 
 function WpaClient.__index:reattach()
-    local reply, err = wpa_ctrl.reattach(self.wc_hdl)
+    local reply, _ = wpa_ctrl.reattach(self.wc_hdl)
     if reply ~= nil and reply == "OK\n" then
         self.attached = true
     end
 end
 
 function WpaClient.__index:detach()
-    local reply, err = wpa_ctrl.detach(self.wc_hdl)
+    local reply, _ = wpa_ctrl.detach(self.wc_hdl)
     if reply ~= nil and reply == "OK\n" then
         self.attached = false
     end

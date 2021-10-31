@@ -1,5 +1,4 @@
 local ffi = require("ffi")
-local C = ffi.C
 
 ffi.cdef[[
 typedef long int __fd_mask;
