@@ -59,12 +59,12 @@ function WpaClient.__index:getInterfaces()
 end
 
 function WpaClient.__index:listNetworks()
-    local results = {}
     local reply, err = self:sendCmd("LIST_NETWORKS", true)
     if reply == nil then
         return nil, err
     end
 
+    local results = {}
     local lst = str_split(reply, "\n")
     table.remove(lst, 1)  -- remove output table header
     for _, v in ipairs(lst) do
@@ -94,6 +94,9 @@ end
 
 function WpaClient.__index:doScan()
     local reply, err = self:sendCmd("SCAN", true)
+    print("WpaClient.__index:doScan", reply, err)
+    print("reply:", reply)
+    print("err:", err)
     if reply == nil then
         return nil, err
     end
@@ -140,12 +143,13 @@ function network_mt.__index:getSignalQuality()
 end
 
 function WpaClient.__index:getScanResults()
-    local results = {}
+    print("WpaClient.__index:getScanResults")
     local reply, err = self:sendCmd("SCAN_RESULTS", true)
     if reply == nil then
         return nil, err
     end
 
+    local results = {}
     local lst = str_split(reply, "\n")
     for _, v in ipairs(lst) do
         local splits = str_split(v, "\t")
@@ -174,9 +178,11 @@ function WpaClient.__index:scanThenGetResults()
     -- May harmlessly fail with FAIL-BUSY, so no need to check the reply.
     local _, err = self:doScan()
     if err then
+        print("doScan failed")
         return nil, err
     end
 
+    print("Looking for scan results..")
     local found_result = false
     local wait_cnt = 20
     while wait_cnt > 0 do
@@ -206,12 +212,12 @@ function WpaClient.__index:scanThenGetResults()
 end
 
 function WpaClient.__index:getStatus()
-    local results = {}
     local reply, err = self:sendCmd("STATUS", true)
     if reply == nil then
         return nil, err
     end
 
+    local results = {}
     local lst = str_split(reply, "\n")
     for _,v in ipairs(lst) do
         local eqs, eqe = v:find("=")
