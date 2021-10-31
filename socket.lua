@@ -18,7 +18,7 @@ end
 
 local sockaddr_pt = ffi.typeof("struct sockaddr *")
 
--- Most of this is handled via macros in C...
+-- Most of this select tooling is handled via macros in C...
 --[[
 local __NFDBITS = 8 * ffi.sizeof("__fd_mask")
 local function __FD_ELT(d)
@@ -147,8 +147,6 @@ function Socket.__index:canRead(timeout)
 end
 
 function Socket.__index:recvAll(flags, event_queue)
-    print("Entered Socket.__index:recvAll")
-    print(debug.traceback())
     -- NOTE: Length stolen from https://w1.fi/cgit/hostap/tree/wpa_supplicant/ctrl_iface.h#n15
     local buf_len = 8192 + 1
     local buf = ffi.new("unsigned char[?]", buf_len)
@@ -181,7 +179,6 @@ function Socket.__index:recvAll(flags, event_queue)
                     -- EINTR or EAGAIN: Back to poll
                 else
                     full_buf_len = full_buf_len + re
-                    print("Socket.__index:recvAll:", re, data)
 
                     if data:sub(1, 1) == "<" then
                         -- Record unsolicited messages in event_queue for later use
@@ -207,7 +204,6 @@ function Socket.__index:recvAll(flags, event_queue)
             break
         end
     end
-    print("Returning from Socket.__index:recvAll", full_buf_len)
 
     return table.concat(full_buf), full_buf_len
 end

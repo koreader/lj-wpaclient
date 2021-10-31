@@ -24,14 +24,15 @@ function WpaClient.new(s)
     }
 
     local hdl, err_msg = wpa_ctrl.open(s)
-    if not hdl then return nil, err_msg end
+    if not hdl then
+        return nil, err_msg
+    end
 
     instance.wc_hdl = hdl
     return setmetatable(instance, WpaClient)
 end
 
 function WpaClient.__index:sendCmd(cmd, block)
-    print("WpaClient.__index:sendCmd",cmd, block)
     return wpa_ctrl.command(self.wc_hdl, cmd, block)
 end
 
@@ -80,9 +81,6 @@ end
 
 function WpaClient.__index:doScan()
     local reply, err = self:sendCmd("SCAN", true)
-    print("WpaClient.__index:doScan")
-    print("reply:", reply)
-    print("err:", err)
     if reply == nil then
         return nil, err
     end
@@ -129,7 +127,6 @@ function network_mt.__index:getSignalQuality()
 end
 
 function WpaClient.__index:getScanResults()
-    print("WpaClient.__index:getScanResults")
     local reply, err = self:sendCmd("SCAN_RESULTS", true)
     if reply == nil then
         return nil, err
@@ -156,7 +153,6 @@ function WpaClient.__index:getScanResults()
 end
 
 function WpaClient.__index:scanThenGetResults()
-    print("WpaClient.__index:scanThenGetResults")
     if not self.attached then
         if not self:attach() then
             return nil, "Failed to ATTACH"
@@ -165,11 +161,9 @@ function WpaClient.__index:scanThenGetResults()
     -- May harmlessly fail with FAIL-BUSY
     local reply, err = self:doScan()
     if reply == nil then
-        print("doScan failed")
         return nil, err
     end
 
-    print("Looking for scan results..")
     local found_result = false
     local wait_cnt = 20
     while wait_cnt > 0 do
@@ -177,16 +171,16 @@ function WpaClient.__index:scanThenGetResults()
             -- NOTE: If we hit a network preferred by the system, we may get connected directly,
             --       but we'll handle that later in WpaSupplicant:getNetworkList...
             if ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
-                print("Found scan results")
                 found_result = true
                 break
             end
         end
-        if found_result then break end
+        if found_result then
+            break
+        end
 
         wait_cnt = wait_cnt - 1
         -- Wait for new data from wpa_supplicant in steps of at most 1 second.
-        print("Waiting 1 more second for scan results")
         -- NOTE: I'm wary of simply doing a 20s poll, because we *may* receive events unrelated to the scan,
         --       unlike in sendCmd...
         wpa_ctrl.waitForResponse(self.wc_hdl, 1 * 1000)
@@ -208,7 +202,7 @@ function WpaClient.__index:getStatus()
 
     local results = {}
     local lst = str_split(reply, "\n")
-    for _,v in ipairs(lst) do
+    for _, v in ipairs(lst) do
         local eqs, eqe = v:find("=")
         if eqs and eqe then
             results[v:sub(1, eqs-1)] = v:sub(eqe+1)
@@ -314,8 +308,6 @@ function WpaClient.__index:waitForEvent(timeout)
 end
 
 function WpaClient.__index:readEvent()
-    print("WpaClient.__index:readEvent")
-    print(debug.traceback())
     -- NOTE: This may read nothing...
     wpa_ctrl.readResponse(self.wc_hdl)
     ---      ... what we care about is actually simply draining the event queue ;).
@@ -323,7 +315,6 @@ function WpaClient.__index:readEvent()
 end
 
 function WpaClient.__index:readAllEvents()
-    print("WpaClient.__index:readAllEvents")
     -- This will call Socket:recvAll, filling the event queue (or not)
     wpa_ctrl.readResponse(self.wc_hdl)
 
