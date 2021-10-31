@@ -301,6 +301,10 @@ function WpaClient.__index:detach()
     end
 end
 
+function WpaClient.__index:waitForEvent(timeout)
+    return wpa_ctrl.waitForResponse(self.wc_hdl, timeout)
+end
+
 function WpaClient.__index:readEvent()
     print("WpaClient.__index:readEvent")
     print(debug.traceback())
