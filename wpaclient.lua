@@ -157,8 +157,7 @@ end
 
 function WpaClient.__index:scanThenGetResults()
     print("WpaClient.__index:scanThenGetResults")
-    local was_attached = self.attached
-    if not was_attached then
+    if not self.attached then
         if not self:attach() then
             return nil, "Failed to ATTACH"
         end
@@ -193,7 +192,7 @@ function WpaClient.__index:scanThenGetResults()
         wpa_ctrl.waitForResponse(self.wc_hdl, 1 * 1000)
     end
 
-    if not was_attached then
+    if self.attached then
         if not self:detach() then
            return nil, "Failed to DETACH"
         end
