@@ -58,12 +58,18 @@ end
 
 function WpaClient.__index:getInterfaces()
     local reply, err = self:sendCmd("INTERFACES", true)
-    return str_split(reply, "\n")
+    if err > 0 then
+        return str_split(reply, "\n")
+    end
 end
 
 function WpaClient.__index:listNetworks()
     local results = {}
     local reply, err = self:sendCmd("LIST_NETWORKS", true)
+    if err <= 0 then
+        return nil
+    end
+
     local lst = str_split(reply, "\n")
     table.remove(lst, 1)  -- remove output table header
     for _, v in ipairs(lst) do
@@ -159,7 +165,9 @@ function WpaClient.__index:scanThenGetResults()
         self:attach()
     end
     local data, err = self:doScan()
-    if err then return nil, err end
+    if err then
+        return nil, err
+    end
 
     local found_result = false
     local wait_cnt = 20
@@ -244,21 +252,21 @@ end
 
 function WpaClient.__index:attach()
     local reply, err = wpa_ctrl.attach(self.wc_hdl)
-    if reply == "OK\n" then
+    if err > 0 and reply == "OK\n" then
         self.attached = true
     end
 end
 
 function WpaClient.__index:reattach()
     local reply, err = wpa_ctrl.reattach(self.wc_hdl)
-    if reply == "OK\n" then
+    if err > 0 and reply == "OK\n" then
         self.attached = true
     end
 end
 
 function WpaClient.__index:detach()
     local reply, err = wpa_ctrl.detach(self.wc_hdl)
-    if reply == "OK\n" then
+    if err > 0 and reply == "OK\n" then
         self.attached = false
     end
 end
