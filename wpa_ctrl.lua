@@ -157,19 +157,31 @@ function wpa_ctrl.readResponse(hdl)
     return data, re
 end
 
-function wpa_ctrl.command(hdl, cmd)
-    local data, re = wpa_ctrl.request(hdl, cmd)
-    return data, re
+function wpa_ctrl.command(hdl, cmd, block)
+    local reply, err_msg = wpa_ctrl.request(hdl, cmd)
+    if block and (reply == nil or #reply == 0) then
+        -- Wait at most 10s for a response (e.g., scans can take a significant amount of time)
+        if wpa_ctrl.waitForResponse(hdl, 10 * 1000) then
+            local re
+            reply, re = wpa_ctrl.readResponse(hdl)
+            if reply == nil or re < 0 then
+                -- i.e., empty reply or read failure
+                return nil, "Empty reply"
+            end
+            err_msg = re
+        else
+            return nil, "Timed out"
+        end
+    end
+    return reply, err_msg
 end
 
 function wpa_ctrl.attach(hdl)
-    local data, re = wpa_ctrl.request(hdl, "ATTACH")
-    return data, re
+    return wpa_ctrl.command(hdl, "ATTACH", true)
 end
 
 function wpa_ctrl.reattach(hdl)
-    local data, re = wpa_ctrl.request(hdl, "REATTACH")
-    return data, re
+    return wpa_ctrl.command(hdl, "REATTACH", true)
 end
 
 function wpa_ctrl.readEvent(hdl)
@@ -178,8 +190,7 @@ function wpa_ctrl.readEvent(hdl)
 end
 
 function wpa_ctrl.detach(hdl)
-    local data, re = wpa_ctrl.request(hdl, "DETACH")
-    return data, re
+    return wpa_ctrl.command(hdl, "DETACH", true)
 end
 
 

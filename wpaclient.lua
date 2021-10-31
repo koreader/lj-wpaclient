@@ -32,22 +32,7 @@ end
 
 function WpaClient.__index:sendCmd(cmd, block)
     print("WpaClient.__index:sendCmd",cmd, block)
-    local reply, err_msg = wpa_ctrl.command(self.wc_hdl, cmd)
-    if block and (reply == nil or #reply == 0) then
-        -- Wait at most 10s for a response (e.g., scans can take a significant amount of time)
-        if wpa_ctrl.waitForResponse(self.wc_hdl, 10 * 1000) then
-            local re
-            reply, re = wpa_ctrl.readResponse(self.wc_hdl)
-            if reply == nil or re < 0 then
-                -- i.e., empty reply or read failure
-                return nil, "Empty reply"
-            end
-            err_msg = re
-        else
-            return nil, "Timed out"
-        end
-    end
-    return reply, err_msg
+    return wpa_ctrl.command(self.wc_hdl, cmd, block)
 end
 
 function WpaClient.__index:getInterfaces()
