@@ -42,6 +42,7 @@ function WpaClient.__index:sendCmd(cmd, block)
                 -- i.e., empty reply or read failure
                 return nil, "Empty reply"
             end
+            err_msg = re
         else
             return nil, "Timed out"
         end
