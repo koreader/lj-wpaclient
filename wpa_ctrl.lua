@@ -138,15 +138,22 @@ function wpa_ctrl.request(hdl, cmd)
         return nil, "Failed to send command: " .. cmd
     end
     data, re = hdl.sock:recvAll(0, hdl.event_queue)
-    if re < 0 then
+    if re <= 0 then
         return nil, "No response from wpa_supplicant"
     end
-    return data
+    return data, re
+end
+
+function wpa_ctrl.waitForResponse(hdl, timeout)
+    return hdl.sock:canRead(timeout)
 end
 
 function wpa_ctrl.readResponse(hdl)
     print("wpa_ctrl.readResponse")
     local data, re = hdl.sock:recvAll(0, hdl.event_queue)
+    if re <= 0 then
+        return nil, "No response from wpa_supplicant"
+    end
     return data, re
 end
 

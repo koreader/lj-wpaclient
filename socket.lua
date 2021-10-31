@@ -132,12 +132,12 @@ function Socket.__index:recv(buf, len, flags)
     end
 end
 
-function Socket.__index:canRead()
+function Socket.__index:canRead(timeout)
     local pfd = ffi.new("struct pollfd")
     pfd.fd = self.fd
     pfd.events = C.POLLIN
 
-    local re = C.poll(pfd, 1, 0)
+    local re = C.poll(pfd, 1, timeout or 0)
     if re > 0 and bit.band(pfd.revents, POLLIN_SET) ~= 0 then
         -- We've got something to read!
         return true
@@ -192,10 +192,12 @@ function Socket.__index:recvAll(flags, event_queue)
                     else
                         table.insert(full_buf, data)
 
-                        if re == 3 and data == "OK\n"
-                        or data:sub(1, 4) == "FAIL" then
-                            -- We're done
-                            break
+                        if re > 0 then
+                            if data == "OK\n"
+                            or data:sub(1, 4) == "FAIL" then
+                                -- We're done
+                                break
+                            end
                         end
                     end
                 end
