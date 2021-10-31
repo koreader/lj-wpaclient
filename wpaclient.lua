@@ -263,15 +263,19 @@ function WpaClient.__index:enableNetworkByID(id)
 end
 
 function WpaClient.__index:getConnectedNetwork()
-    local re = self:getStatus()
-    if re.wpa_state == "COMPLETED" then
+    local reply, err = self:getStatus()
+    if reply == nil then
+        return nil, err
+    end
+
+    if reply.wpa_state == "COMPLETED" then
         return {
-            id = re.id,
-            ssid = re.ssid,
-            bssid = re.bssid,
+            id = reply.id,
+            ssid = reply.ssid,
+            bssid = reply.bssid,
         }
     else
-        return nil
+        return nil, reply.wpa_state
     end
 end
 
