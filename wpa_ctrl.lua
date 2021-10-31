@@ -88,17 +88,6 @@ local function new_event_queue()
     return q
 end
 
-
-local function file_exists(fn)
-    local f = io.open(fn, "re")
-    if f ~= nil then
-        io.close(f)
-        return true
-    else
-        return false
-    end
-end
-
 function wpa_ctrl.open(ctrl_sock)
     local re
     local hdl = {
