@@ -159,7 +159,9 @@ function WpaClient.__index:scanThenGetResults()
     print("WpaClient.__index:scanThenGetResults")
     local was_attached = self.attached
     if not was_attached then
-        self:attach()
+        if not self:attach() then
+            return nil, "Failed to ATTACH"
+        end
     end
     -- May harmlessly fail with FAIL-BUSY
     local reply, err = self:doScan()
@@ -192,7 +194,9 @@ function WpaClient.__index:scanThenGetResults()
     end
 
     if not was_attached then
-        self:detach()
+        if not self:detach() then
+           return nil, "Failed to DETACH"
+        end
     end
     return self:getScanResults()
 end
@@ -276,21 +280,30 @@ function WpaClient.__index:attach()
     local reply, _ = wpa_ctrl.attach(self.wc_hdl)
     if reply ~= nil and reply == "OK\n" then
         self.attached = true
+        return true
     end
+
+    return false
 end
 
 function WpaClient.__index:reattach()
     local reply, _ = wpa_ctrl.reattach(self.wc_hdl)
     if reply ~= nil and reply == "OK\n" then
         self.attached = true
+        return true
     end
+
+    return false
 end
 
 function WpaClient.__index:detach()
     local reply, _ = wpa_ctrl.detach(self.wc_hdl)
     if reply ~= nil and reply == "OK\n" then
         self.attached = false
+        return true
     end
+
+    return false
 end
 
 function WpaClient.__index:waitForEvent(timeout)
