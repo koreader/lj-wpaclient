@@ -193,7 +193,7 @@ function WpaClient.__index:scanThenGetResults()
         wait_cnt = wait_cnt - 1
         -- sleep for 1 second
         print("Waiting 1 more second for scan results")
-        C.sleep(1)
+        wpa_ctrl.waitForResponse(self.wc_hdl, 1 * 1000)
     end
 
     if not was_attached then
@@ -301,13 +301,15 @@ end
 function WpaClient.__index:readEvent()
     print("WpaClient.__index:readEvent")
     print(debug.traceback())
+    -- NOTE: This may read nothing...
     wpa_ctrl.readResponse(self.wc_hdl)
+    ---      ... what we care about is actually simply draining the event queue ;).
     return wpa_ctrl.readEvent(self.wc_hdl)
 end
 
 function WpaClient.__index:readAllEvents()
     print("WpaClient.__index:readAllEvents")
-    -- This will call Socket:recvAll, filling the event queue
+    -- This will call Socket:recvAll, filling the event queue (or not)
     wpa_ctrl.readResponse(self.wc_hdl)
 
     -- Drain the replies pushed in the event queue by Socket:recvAll in FILO order.
