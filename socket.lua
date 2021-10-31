@@ -98,6 +98,7 @@ end
 function Socket.__index:send(buf, len, flags)
     local pos = 0
     while len > pos do
+        -- NOTE: buf is a Lua string, so this isn't as nice as with real pointer arithmetic...
         local nw = C.send(self.fd, pos == 0 and buf or buf:sub(1 + pos), len - pos, bit.bor(flags, C.MSG_NOSIGNAL))
         if nw == -1 then
             local errno = ffi.errno()
@@ -123,7 +124,6 @@ function Socket.__index:send(buf, len, flags)
 end
 
 function Socket.__index:recv(buf, len, flags)
-    --- @TODO support for parsing (host, port) tuple 04.10 2014 (houqp)
     local re = C.recv(self.fd, buf, len, flags)
     if re < 0 then
         return nil, re
