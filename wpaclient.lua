@@ -350,6 +350,8 @@ function WpaClient.__index:readAllEvents()
 end
 
 function WpaClient.__index:disconnect()
+    -- NOTE: Probably expects an actual response, and as such, should use sendStatusCmd?
+    --       We're currently not using it, though.
     return self:sendCmd("DISCONNECT")
 end
 
