@@ -1,7 +1,8 @@
 lj-wpaclient
 ============
 
-Native Lua implementation of client for wpa_supplicant control protocol.
+Native Lua implementation of client for wpa_supplicant control protocol,
+(c.f., https://w1.fi/cgit/hostap/tree/src/common/wpa_ctrl.c).
 
 
 Dependencies

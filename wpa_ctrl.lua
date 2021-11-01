@@ -1,8 +1,7 @@
 local cur_path = (...):match("(.-)[^%(.|/)]+$")
-local ffi = require('ffi')
-local Socket = require(cur_path..'socket')
-
-local wpa_ctrl = {}
+local ffi = require("ffi")
+local C = ffi.C
+local Socket = require(cur_path .. "socket")
 
 ffi.cdef[[
 unsigned int sleep(unsigned int seconds);
@@ -10,48 +9,55 @@ struct sockaddr_un {
   short unsigned int sun_family;
   char sun_path[108];
 };
-int unlink(const char *) __attribute__((__nothrow__, __leaf__));
+int unlink(const char *) __attribute__((nothrow, leaf));
 ]]
-local sockaddr_un_t = ffi.typeof('struct sockaddr_un')
 
-math.randomseed(os.time())
 
+local sockaddr_un_t = ffi.typeof("struct sockaddr_un")
 
 local event_mt = {__index = {}}
 
+local wpa_ctrl = {}
+
 function event_mt.__index:isAuthSuccessful()
-    return (string.find(self.msg, 'CTRL%-EVENT%-CONNECTED')
-            or string.match(self.msg, '%w+: Key negotiation completed with (.+)') ~= nil)
+    return (string.find(self.msg, "^CTRL%-EVENT%-CONNECTED")
+            or string.match(self.msg, "^%w+: Key negotiation completed with (.+)$") ~= nil)
 end
 
 function event_mt.__index:isScanEvent()
-    return (self.msg == 'WPS-AP-AVAILABLE'
-            or self.msg == 'CTRL-EVENT-SCAN-RESULTS'
-            or string.match(self.msg, 'CTRL%-EVENT%-BSS%-%w+ %d+ .*') ~= nil)
+    return (self.msg == "WPS-AP-AVAILABLE"
+            or self.msg == "CTRL-EVENT-SCAN-RESULTS"
+            or string.match(self.msg, "^CTRL%-EVENT%-BSS%-%w+ %d+ .*$") ~= nil)
 end
 
 function event_mt.__index:isAuthFailed()
-    return (string.match(self.msg, 'Authentication with (.-) timed out') ~= nil
-            or self.msg == 'CTRL-EVENT-DISCONNECTED - Disconnect event - remove keys')
+    return (string.find(self.msg, "^CTRL%-EVENT%-DISCONNECTED")
+            or string.match(self.msg, "^Authentication with (.-) timed out$") ~= nil)
 end
 
 local ev_lv2str = {
-    ['0'] = 'MSGDUMP',
-    ['1'] = 'DEBUG',
-    ['2'] = 'INFO',
-    ['3'] = 'WARNING',
-    ['4'] = 'ERROR',
+    ["0"] = "MSGDUMP",
+    ["1"] = "DEBUG",
+    ["2"] = "INFO",
+    ["3"] = "WARNING",
+    ["4"] = "ERROR",
 }
-local MAX_EV_QUEUE_SZ = 5000
+local MAX_EV_QUEUE_SZ = 1024
 local event_queue_mt = {__index = {}}
 
 function event_queue_mt.__index:parse(ev_str)
-    local lvl, msg = string.match(ev_str, '^<(%d)>(.-)%s*$')
+    local lvl, msg = string.match(ev_str, "^<(%d)>(.-)%s*$")
     if not lvl then
-        -- TODO: log error
+        print("wpa_ctrl failed to parse unsolicited message:", ev_str)
         return
     end
     local ev = {lvl = ev_lv2str[lvl], msg = msg}
+    setmetatable(ev, event_mt)
+    self:push(ev)
+end
+
+function event_queue_mt.__index:parse_ifname(ev_str)
+    local ev = {lvl = "INFO", msg = ev_str}
     setmetatable(ev, event_mt)
     self:push(ev)
 end
@@ -73,17 +79,6 @@ local function new_event_queue()
     return q
 end
 
-
-local function file_exists(fn)
-    local f = io.open(fn, 'r')
-    if f ~= nil then
-        io.close(f)
-        return true
-    else
-        return false
-    end
-end
-
 function wpa_ctrl.open(ctrl_sock)
     local re
     local hdl = {
@@ -94,34 +89,24 @@ function wpa_ctrl.open(ctrl_sock)
         event_queue = nil,
     }
 
-    -- we only try ten times before give up
-    for _=1, 10 do
-        hdl.recv_sock_path = '/tmp/lj-wpaclient-'..math.random(0, 100000)
-        if not file_exists(hdl.recv_sock_path) then
-            break
-        else
-            hdl.recv_sock_path = nil
-        end
-    end
-    if not hdl.recv_sock_path then
-        return nil, "Failed to create temporary unix socket file"
-    end
+    -- Clean up potentially stale socket
+    hdl.recv_sock_path = "/tmp/lj-wpaclient-" .. tostring(C.getpid())
+    C.unlink(hdl.recv_sock_path)
+
     ffi.copy(hdl.local_saddr.sun_path, hdl.recv_sock_path)
     ffi.copy(hdl.dest_saddr.sun_path, ctrl_sock)
 
     hdl.sock = Socket.new(Socket.AF_UNIX, Socket.SOCK_DGRAM, 0)
     if not hdl.sock then
-        return nil, "Failed to initilize socket instance"
+        return nil, "Failed to initialize socket instance"
     end
     re = hdl.sock:bind(hdl.local_saddr, sockaddr_un_t)
     if re < 0 then
-        return nil, hdl.sock:closeOnError(
-            'Failed to bind socket: '..hdl.recv_sock_path)
+        return nil, hdl.sock:closeOnError("Failed to bind socket: " .. hdl.recv_sock_path)
     end
     re = hdl.sock:connect(hdl.dest_saddr, sockaddr_un_t)
     if re < 0 then
-        return nil, hdl.sock:closeOnError(
-            'Failed to connect to wpa_supplicant control socket: '..ctrl_sock)
+        return nil, hdl.sock:closeOnError("Failed to connect to wpa_supplicant control socket: " .. ctrl_sock)
     end
 
     hdl.event_queue = new_event_queue()
@@ -130,7 +115,7 @@ end
 
 function wpa_ctrl.close(hdl)
     if hdl.recv_sock_path then
-        ffi.C.unlink(hdl.recv_sock_path)
+        C.unlink(hdl.recv_sock_path)
     end
     if hdl.sock then
         hdl.sock:close()
@@ -138,31 +123,89 @@ function wpa_ctrl.close(hdl)
 end
 
 function wpa_ctrl.request(hdl, cmd)
-    local re, data
+    local data, re
     re = hdl.sock:send(cmd, #cmd, 0)
     if re < #cmd then
-        return nil, 'Failed to send command: '..cmd
+        return nil, "Failed to send command: " .. cmd
     end
-    -- TODO: pass proper flags to recvfromAll
-    data, re = hdl.sock:recvfromAll(0, hdl.event_queue)
-    if re < 0 then
-        return nil, 'No response from wpa_supplicant'
+    data, re = hdl.sock:recvAll(0, hdl.event_queue)
+    if re <= 0 then
+        return nil, "No response from wpa_supplicant"
     end
-    return data.buf
+    return data, re
+end
+
+function wpa_ctrl.waitForResponse(hdl, timeout)
+    return hdl.sock:canRead(timeout)
 end
 
 function wpa_ctrl.readResponse(hdl)
-    local data, re = hdl.sock:recvfromAll(0, hdl.event_queue)
-    return data.buf, re
+    local data, re = hdl.sock:recvAll(0, hdl.event_queue)
+    -- NOTE: I'm not quite sure we can actually get an empty response (i.e., `re == 0`),
+    --       as `re` counts the *full* amount of bytes received (both response & unsolicited messages),
+    --       so this will mostly catch failures in poll or recv.
+    if re <= 0 then
+        return nil, "No response from wpa_supplicant"
+    end
+    return data, re
 end
 
-function wpa_ctrl.command(hdl, cmd)
-    local buf, re = wpa_ctrl.request(hdl, cmd)
-    return buf, re
+-- Send a command and return on the first thing wpa_supplicant replies
+-- (may be a response, may be an unsolicited message).
+function wpa_ctrl.command(hdl, cmd, block)
+    local reply, err_msg = wpa_ctrl.request(hdl, cmd)
+    if block and (reply == nil or #reply == 0) then
+        -- Wait at most 10s for a response (e.g., scans can take a significant amount of time)
+        if wpa_ctrl.waitForResponse(hdl, 10 * 1000) then
+            local re
+            reply, re = wpa_ctrl.readResponse(hdl)
+            if reply == nil or re < 0 then
+                -- i.e., empty reply or or I/O error
+                return nil, "Empty reply"
+            end
+            err_msg = re
+        else
+            return nil, "Timed out"
+        end
+    end
+    return reply, err_msg
+end
+
+-- Send a command and return the first *response* wpa_supplicant replies.
+function wpa_ctrl.control_command(hdl, cmd)
+    local reply, err_msg = wpa_ctrl.request(hdl, cmd)
+    if reply == nil or #reply == 0 then
+        -- Wait at most 10s for an actual response, not an unsolicited message, hence the #reply check...
+        local cnt = 1
+        local max_retry = 10
+        while reply == nil or #reply == 0 do
+            if wpa_ctrl.waitForResponse(hdl, 1 * 1000) then
+                local re
+                reply, re = wpa_ctrl.readResponse(hdl)
+                if reply == nil or re < 0 then
+                    -- i.e., empty reply or I/O error
+                    return nil, "Empty reply"
+                end
+                err_msg = re
+            else
+                -- Timed out
+                cnt = cnt + 1
+            end
+
+            if cnt > max_retry then
+                return nil, "Timed out"
+            end
+        end
+    end
+    return reply, err_msg
 end
 
 function wpa_ctrl.attach(hdl)
-    wpa_ctrl.request(hdl, 'ATTACH')
+    return wpa_ctrl.control_command(hdl, "ATTACH")
+end
+
+function wpa_ctrl.reattach(hdl)
+    return wpa_ctrl.control_command(hdl, "REATTACH")
 end
 
 function wpa_ctrl.readEvent(hdl)
@@ -170,8 +213,7 @@ function wpa_ctrl.readEvent(hdl)
 end
 
 function wpa_ctrl.detach(hdl)
-    wpa_ctrl.request(hdl, 'DETACH')
+    return wpa_ctrl.control_command(hdl, "DETACH")
 end
-
 
 return wpa_ctrl
