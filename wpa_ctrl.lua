@@ -147,6 +147,7 @@ function wpa_ctrl.readResponse(hdl)
     return data, re
 end
 
+-- Send a command and return the first thing wpa_supplicant replies (may be a response, may be an unsolicited message)
 function wpa_ctrl.command(hdl, cmd, block)
     local reply, err_msg = wpa_ctrl.request(hdl, cmd)
     if block and (reply == nil or #reply == 0) then
@@ -166,11 +167,12 @@ function wpa_ctrl.command(hdl, cmd, block)
     return reply, err_msg
 end
 
+-- Send a command and return the first *response* wpa_supplicant replies
 function wpa_ctrl.status_command(hdl, cmd)
     local reply, err_msg = wpa_ctrl.request(hdl, cmd)
     if reply == nil or #reply == 0 then
         -- Wait at most 10s for an actual response, not an unsolicited message, hence the #reply check...
-        local cnt = 0
+        local cnt = 1
         local max_retry = 10
         while reply == nil or #reply == 0 do
             if wpa_ctrl.waitForResponse(hdl, 1 * 1000) then
