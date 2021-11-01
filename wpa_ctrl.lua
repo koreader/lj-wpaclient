@@ -156,7 +156,7 @@ function wpa_ctrl.command(hdl, cmd, block)
             local re
             reply, re = wpa_ctrl.readResponse(hdl)
             if reply == nil or re < 0 then
-                -- i.e., empty reply or read failure
+                -- i.e., empty reply or or I/O error
                 return nil, "Empty reply"
             end
             err_msg = re
@@ -179,7 +179,7 @@ function wpa_ctrl.status_command(hdl, cmd)
                 local re
                 reply, re = wpa_ctrl.readResponse(hdl)
                 if reply == nil or re < 0 then
-                    -- i.e., empty reply or read failure
+                    -- i.e., empty reply or I/O error
                     return nil, "Empty reply"
                 end
                 err_msg = re
