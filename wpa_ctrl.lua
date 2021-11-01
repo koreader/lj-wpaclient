@@ -166,12 +166,40 @@ function wpa_ctrl.command(hdl, cmd, block)
     return reply, err_msg
 end
 
+function wpa_ctrl.status_command(hdl, cmd, block)
+    local reply, err_msg = wpa_ctrl.request(hdl, cmd)
+    if block and (reply == nil or #reply == 0) then
+        -- Wait at most 10s for an actual response, not an unsolicited message, hence the #reply check...
+        local cnt = 0
+        local max_retry = 10
+        while (reply == nil or #reply == 0) do
+            if wpa_ctrl.waitForResponse(hdl, 1 * 1000) then
+                local re
+                reply, re = wpa_ctrl.readResponse(hdl)
+                if reply == nil or re < 0 then
+                    -- i.e., empty reply or read failure
+                    return nil, "Empty reply"
+                end
+                err_msg = re
+            else
+                -- Timed out
+                cnt = cnt + 1
+            end
+
+            if cnt > max_retry then
+                return nil, "Timed out"
+            end
+        end
+    end
+    return reply, err_msg
+end
+
 function wpa_ctrl.attach(hdl)
-    return wpa_ctrl.command(hdl, "ATTACH", true)
+    return wpa_ctrl.status_command(hdl, "ATTACH", true)
 end
 
 function wpa_ctrl.reattach(hdl)
-    return wpa_ctrl.command(hdl, "REATTACH", true)
+    return wpa_ctrl.status_command(hdl, "REATTACH", true)
 end
 
 function wpa_ctrl.readEvent(hdl)
@@ -179,7 +207,7 @@ function wpa_ctrl.readEvent(hdl)
 end
 
 function wpa_ctrl.detach(hdl)
-    return wpa_ctrl.command(hdl, "DETACH", true)
+    return wpa_ctrl.status_command(hdl, "DETACH", true)
 end
 
 return wpa_ctrl

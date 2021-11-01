@@ -277,33 +277,45 @@ function WpaClient.__index:getConnectedNetwork()
 end
 
 function WpaClient.__index:attach()
-    local reply, _ = wpa_ctrl.attach(self.wc_hdl)
+    local reply, err = wpa_ctrl.attach(self.wc_hdl)
     if reply ~= nil and reply == "OK\n" then
         self.attached = true
-        return true, "OK"
+        return true
     end
 
-    return false, str_strip(reply)
+    if reply == nil then
+        return false, err
+    end
+
+    return false, str_strip(reply) or "N/A"
 end
 
 function WpaClient.__index:reattach()
-    local reply, _ = wpa_ctrl.reattach(self.wc_hdl)
+    local reply, err = wpa_ctrl.reattach(self.wc_hdl)
     if reply ~= nil and reply == "OK\n" then
         self.attached = true
-        return true, "OK"
+        return true
     end
 
-    return false, str_strip(reply)
+    if reply == nil then
+        return false, err
+    end
+
+    return false, str_strip(reply) or "N/A"
 end
 
 function WpaClient.__index:detach()
-    local reply, _ = wpa_ctrl.detach(self.wc_hdl)
+    local reply, err = wpa_ctrl.detach(self.wc_hdl)
     if reply ~= nil and reply == "OK\n" then
         self.attached = false
-        return true, "OK"
+        return true
     end
 
-    return false, str_strip(reply)
+    if reply == nil then
+        return false, err
+    end
+
+    return false, str_strip(reply) or "N/A"
 end
 
 function WpaClient.__index:waitForEvent(timeout)
