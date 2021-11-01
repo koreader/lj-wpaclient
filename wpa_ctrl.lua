@@ -147,7 +147,7 @@ function wpa_ctrl.readResponse(hdl)
     return data, re
 end
 
--- Send a command and return the first thing wpa_supplicant replies (may be a response, may be an unsolicited message)
+-- Send a command and return on the first thing wpa_supplicant replies (may be a response, may be an unsolicited message)
 function wpa_ctrl.command(hdl, cmd, block)
     local reply, err_msg = wpa_ctrl.request(hdl, cmd)
     if block and (reply == nil or #reply == 0) then
