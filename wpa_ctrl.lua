@@ -168,7 +168,7 @@ function wpa_ctrl.command(hdl, cmd, block)
 end
 
 -- Send a command and return the first *response* wpa_supplicant replies
-function wpa_ctrl.status_command(hdl, cmd)
+function wpa_ctrl.control_command(hdl, cmd)
     local reply, err_msg = wpa_ctrl.request(hdl, cmd)
     if reply == nil or #reply == 0 then
         -- Wait at most 10s for an actual response, not an unsolicited message, hence the #reply check...
@@ -197,11 +197,11 @@ function wpa_ctrl.status_command(hdl, cmd)
 end
 
 function wpa_ctrl.attach(hdl)
-    return wpa_ctrl.status_command(hdl, "ATTACH")
+    return wpa_ctrl.control_command(hdl, "ATTACH")
 end
 
 function wpa_ctrl.reattach(hdl)
-    return wpa_ctrl.status_command(hdl, "REATTACH")
+    return wpa_ctrl.control_command(hdl, "REATTACH")
 end
 
 function wpa_ctrl.readEvent(hdl)
@@ -209,7 +209,7 @@ function wpa_ctrl.readEvent(hdl)
 end
 
 function wpa_ctrl.detach(hdl)
-    return wpa_ctrl.status_command(hdl, "DETACH")
+    return wpa_ctrl.control_command(hdl, "DETACH")
 end
 
 return wpa_ctrl

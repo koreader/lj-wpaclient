@@ -36,8 +36,8 @@ function WpaClient.__index:sendCmd(cmd, block)
     return wpa_ctrl.command(self.wc_hdl, cmd, block)
 end
 
-function WpaClient.__index:sendStatusCmd(cmd)
-    return wpa_ctrl.status_command(self.wc_hdl, cmd)
+function WpaClient.__index:sendCtrlCmd(cmd)
+    return wpa_ctrl.control_command(self.wc_hdl, cmd)
 end
 
 function WpaClient.__index:getInterfaces()
@@ -84,7 +84,7 @@ function WpaClient.__index:getCurrentNetwork()
 end
 
 function WpaClient.__index:doScan()
-    local reply, err = self:sendStatusCmd("SCAN")
+    local reply, err = self:sendCtrlCmd("SCAN")
     if reply == nil then
         return nil, err
     end
@@ -219,7 +219,7 @@ function WpaClient.__index:getStatus()
 end
 
 function WpaClient.__index:addNetwork()
-    local reply, err = self:sendStatusCmd("ADD_NETWORK")
+    local reply, err = self:sendCtrlCmd("ADD_NETWORK")
     if reply == nil then
         return nil, err
     end
@@ -228,7 +228,7 @@ function WpaClient.__index:addNetwork()
 end
 
 function WpaClient.__index:removeNetwork(id)
-    local reply, err = self:sendStatusCmd("REMOVE_NETWORK " .. id)
+    local reply, err = self:sendCtrlCmd("REMOVE_NETWORK " .. id)
     if reply == nil then
         return nil, err
     end
@@ -237,7 +237,7 @@ function WpaClient.__index:removeNetwork(id)
 end
 
 function WpaClient.__index:disableNetworkByID(id)
-    local reply, err = self:sendStatusCmd("DISABLE_NETWORK " .. id)
+    local reply, err = self:sendCtrlCmd("DISABLE_NETWORK " .. id)
     if reply == nil then
         return nil, err
     end
@@ -246,7 +246,7 @@ function WpaClient.__index:disableNetworkByID(id)
 end
 
 function WpaClient.__index:setNetwork(id, key, value)
-    local reply, err = self:sendStatusCmd(string.format("SET_NETWORK %d %s %s", id, key, value))
+    local reply, err = self:sendCtrlCmd(string.format("SET_NETWORK %d %s %s", id, key, value))
     if reply == nil then
         return nil, err
     end
@@ -255,7 +255,7 @@ function WpaClient.__index:setNetwork(id, key, value)
 end
 
 function WpaClient.__index:enableNetworkByID(id)
-    local reply, err = self:sendStatusCmd("ENABLE_NETWORK " .. id)
+    local reply, err = self:sendCtrlCmd("ENABLE_NETWORK " .. id)
     if reply == nil then
         return nil, err
     end
@@ -350,7 +350,7 @@ function WpaClient.__index:readAllEvents()
 end
 
 function WpaClient.__index:disconnect()
-    -- NOTE: Probably expects an actual response, and as such, should use sendStatusCmd?
+    -- NOTE: Probably expects an actual response, and as such, should use sendCtrlCmd?
     --       We're currently not using it, though.
     return self:sendCmd("DISCONNECT")
 end
