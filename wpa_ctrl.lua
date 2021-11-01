@@ -141,13 +141,17 @@ end
 
 function wpa_ctrl.readResponse(hdl)
     local data, re = hdl.sock:recvAll(0, hdl.event_queue)
+    -- NOTE: I'm not quite sure we can actually get an empty response (i.e., `re == 0`),
+    --       as `re` counts the *full* amount of bytes received (both response & unsolicited messages),
+    --       so this will mostly catch failures in poll or recv.
     if re <= 0 then
         return nil, "No response from wpa_supplicant"
     end
     return data, re
 end
 
--- Send a command and return on the first thing wpa_supplicant replies (may be a response, may be an unsolicited message)
+-- Send a command and return on the first thing wpa_supplicant replies
+-- (may be a response, may be an unsolicited message).
 function wpa_ctrl.command(hdl, cmd, block)
     local reply, err_msg = wpa_ctrl.request(hdl, cmd)
     if block and (reply == nil or #reply == 0) then
@@ -167,7 +171,7 @@ function wpa_ctrl.command(hdl, cmd, block)
     return reply, err_msg
 end
 
--- Send a command and return the first *response* wpa_supplicant replies
+-- Send a command and return the first *response* wpa_supplicant replies.
 function wpa_ctrl.control_command(hdl, cmd)
     local reply, err_msg = wpa_ctrl.request(hdl, cmd)
     if reply == nil or #reply == 0 then
