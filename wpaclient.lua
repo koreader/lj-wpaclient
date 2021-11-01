@@ -219,7 +219,7 @@ function WpaClient.__index:getStatus()
 end
 
 function WpaClient.__index:addNetwork()
-    local reply, err = self:sendCmd("ADD_NETWORK", true)
+    local reply, err = self:sendStatusCmd("ADD_NETWORK")
     if reply == nil then
         return nil, err
     end
@@ -228,7 +228,7 @@ function WpaClient.__index:addNetwork()
 end
 
 function WpaClient.__index:removeNetwork(id)
-    local reply, err = self:sendCmd("REMOVE_NETWORK " .. id, true)
+    local reply, err = self:sendStatusCmd("REMOVE_NETWORK " .. id)
     if reply == nil then
         return nil, err
     end
@@ -237,7 +237,7 @@ function WpaClient.__index:removeNetwork(id)
 end
 
 function WpaClient.__index:disableNetworkByID(id)
-    local reply, err = self:sendCmd("DISABLE_NETWORK " .. id, true)
+    local reply, err = self:sendStatusCmd("DISABLE_NETWORK " .. id)
     if reply == nil then
         return nil, err
     end
@@ -246,7 +246,7 @@ function WpaClient.__index:disableNetworkByID(id)
 end
 
 function WpaClient.__index:setNetwork(id, key, value)
-    local reply, err = self:sendCmd(string.format("SET_NETWORK %d %s %s", id, key, value), true)
+    local reply, err = self:sendStatusCmd(string.format("SET_NETWORK %d %s %s", id, key, value))
     if reply == nil then
         return nil, err
     end
@@ -255,7 +255,7 @@ function WpaClient.__index:setNetwork(id, key, value)
 end
 
 function WpaClient.__index:enableNetworkByID(id)
-    local reply, err = self:sendCmd("ENABLE_NETWORK " .. id, true)
+    local reply, err = self:sendStatusCmd("ENABLE_NETWORK " .. id)
     if reply == nil then
         return nil, err
     end
