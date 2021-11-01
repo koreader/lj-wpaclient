@@ -153,13 +153,15 @@ function WpaClient.__index:getScanResults()
 end
 
 function WpaClient.__index:scanThenGetResults()
+    local success, reply, err
     if not self.attached then
-        if not self:attach() then
-            return nil, "Failed to ATTACH"
+        success, err = self:attach()
+        if not success then
+            return nil, "Failed to ATTACH: " .. err
         end
     end
     -- May harmlessly fail with FAIL-BUSY
-    local reply, err = self:doScan()
+    reply, err = self:doScan()
     if reply == nil then
         return nil, err
     end
@@ -187,8 +189,9 @@ function WpaClient.__index:scanThenGetResults()
     end
 
     if self.attached then
-        if not self:detach() then
-           return nil, "Failed to DETACH"
+        success, err = self:detach()
+        if not success then
+           return nil, "Failed to DETACH: " .. err
         end
     end
     return self:getScanResults()
