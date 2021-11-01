@@ -36,6 +36,10 @@ function WpaClient.__index:sendCmd(cmd, block)
     return wpa_ctrl.command(self.wc_hdl, cmd, block)
 end
 
+function WpaClient.__index:sendStatusCmd(cmd)
+    return wpa_ctrl.status_command(self.wc_hdl, cmd)
+end
+
 function WpaClient.__index:getInterfaces()
     local reply, err = self:sendCmd("INTERFACES", true)
     if reply == nil then
@@ -80,7 +84,7 @@ function WpaClient.__index:getCurrentNetwork()
 end
 
 function WpaClient.__index:doScan()
-    local reply, err = self:sendCmd("SCAN", true)
+    local reply, err = self:sendStatusCmd("SCAN")
     if reply == nil then
         return nil, err
     end
