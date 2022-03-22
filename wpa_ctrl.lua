@@ -21,7 +21,7 @@ local wpa_ctrl = {}
 
 function event_mt.__index:isAuthSuccessful()
     return (string.find(self.msg, "^CTRL%-EVENT%-CONNECTED")
-            or string.match(self.msg, "^%w+: Key negotiation completed with (.+)$") ~= nil)
+            or string.match(self.msg, "^WPA: Key negotiation completed with (.+)$") ~= nil)
 end
 
 function event_mt.__index:isScanEvent()
@@ -32,7 +32,7 @@ end
 
 function event_mt.__index:isAuthFailed()
     return (string.find(self.msg, "^CTRL%-EVENT%-DISCONNECTED")
-            or string.match(self.msg, "^Authentication with (.-) timed out$") ~= nil)
+            or string.match(self.msg, "^Authentication with (.-) timed out%.$") ~= nil)
 end
 
 local ev_lv2str = {
