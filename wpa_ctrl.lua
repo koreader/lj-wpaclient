@@ -3,14 +3,15 @@ local ffi = require("ffi")
 local C = ffi.C
 local Socket = require(cur_path .. "socket")
 
-ffi.cdef[[
-unsigned int sleep(unsigned int seconds);
+
+pcall(ffi.cdef, "unsigned int sleep(unsigned int seconds);")
+pcall(ffi.cdef, [[
 struct sockaddr_un {
   short unsigned int sun_family;
   char sun_path[108];
 };
-int unlink(const char *) __attribute__((nothrow, leaf));
-]]
+]])
+pcall(ffi.cdef, "int unlink(const char *) __attribute__((nothrow, leaf));")
 
 
 local sockaddr_un_t = ffi.typeof("struct sockaddr_un")

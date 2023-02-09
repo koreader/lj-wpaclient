@@ -1,15 +1,15 @@
 local ffi = require("ffi")
 
-ffi.cdef[[
-typedef long int __fd_mask;
+pcall(ffi.cdef, "typedef long int __fd_mask;")
+pcall(ffi.cdef, [[
 typedef struct {
   __fd_mask __fds_bits[32];
 } fd_set;
-int select(int, fd_set *restrict, fd_set *restrict, fd_set *restrict, struct timeval *restrict);
+]])
+pcall(ffi.cdef, "int select(int, fd_set *restrict, fd_set *restrict, fd_set *restrict, struct timeval *restrict);")
 
-static const int POLLRDNORM = 64;
-static const int POLLRDBAND = 128;
-]]
+pcall(ffi.cdef, "static const int POLLRDNORM = 64;")
+pcall(ffi.cdef, "static const int POLLRDBAND = 128;")
 
 
 --[[
