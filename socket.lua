@@ -1,19 +1,12 @@
 local cur_path = (...):match("(.-)[^%(.|/)]+$")
 local ffi = require("ffi")
 local C = ffi.C
--- We may already have some of these thanks to koreader-base ffi modules, hence the conditional loading
-if pcall(function() return C.AF_UNIX end) == false then
-    require(cur_path .. "consts_h")
-end
-if pcall(function() return C.socket end) == false then
-    require(cur_path .. "socket_h")
-end
-if pcall(function() return C.poll end) == false then
-    require(cur_path .. "poll_h")
-end
-if pcall(function() return C.select end) == false then
-    require(cur_path .. "select_h")
-end
+-- We may already have some of these thanks to koreader-base ffi modules,
+-- so we load each symbol one-by-one in a protected call...
+require(cur_path .. "consts_h")
+require(cur_path .. "socket_h")
+require(cur_path .. "poll_h")
+require(cur_path .. "select_h")
 
 
 local sockaddr_pt = ffi.typeof("struct sockaddr *")
