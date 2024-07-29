@@ -170,7 +170,7 @@ function WpaClient.__index:scanThenGetResults()
         return nil, err
     end
 
-    local found_result, done, first_msg
+    local found_result, done
     local started_scans = 0
     local finished_scans = 0
     local expected_scans = 1
@@ -195,21 +195,17 @@ function WpaClient.__index:scanThenGetResults()
             -- NOTE: If we hit a network preferred by the system, we may get connected directly,
             --       but we'll handle that later in WpaSupplicant:getNetworkList...
 
-            -- Try to deal with stupidly old userland with no CTRL-EVENT-SCAN-STARTED events...
-            if not first_msg then
-                if ev.msg ~= "CTRL-EVENT-SCAN-STARTED" then
-                    -- This'll deal with the original expected scans.
-                    started_scans = started_scans + 1
-                end
-                first_msg = true
-            end
-
             if ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
                 finished_scans = finished_scans + 1
                 -- We're only done once all the scans we've started have finished *and*
                 -- when this number matches the actual number of scans we expected,
                 -- in case there were rescans triggered by CTRL-EVENT-NETWORK-NOT-FOUND
-                found_result = finished_scans == started_scans and finished_scans == expected_scans
+                if started_scans == 0 then
+                    -- NOTE: Ignore started_scans on platforms without the event
+                    found_result = finished_scans == expected_scans
+                else
+                    found_result = finished_scans == started_scans and finished_scans == expected_scans
+                end
             end
 
             -- If we get CTRL-EVENT-NETWORK-NOT-FOUND, it means a preferred network wasn't found during the scan.
