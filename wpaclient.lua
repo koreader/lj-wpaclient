@@ -193,6 +193,7 @@ function WpaClient.__index:scanThenGetResults()
         self:readAllEvents(evs)
 
         -- Fudge the counter when we're missing the initial scan-started event...
+        -- (On sane "OK" runs, CTRL-EVENT-SCAN-STARTED is *always* the first event (if supported...)).
         if started_scans == 0 and evs[1] and evs[1].msg ~= "CTRL-EVENT-SCAN-STARTED" then
             -- NOTE: Should technically *only* happen when string.sub(reply, 1, 9) == "FAIL-BUSY",
             --       but doing this regardless is harmless.
