@@ -179,7 +179,7 @@ function WpaClient.__index:scanThenGetResults()
         iter = iter + 1
         -- Wait for new data from wpa_supplicant in steps of at most 250ms.
         local incoming = wpa_ctrl.waitForResponse(self.wc_hdl, 250)
-        -- NOTE: If our previous iteration was successful and there's no more data on the wire,
+        -- NOTE: If our previous iteration was successful and there's no more data over the wire,
         --       assume we're at no risk of a split scan, so we're done.
         --       We do this because wpa_supplicant may start another scan on its own,
         --       and we don't want to break on CTRL-EVENT-SCAN-RESULTS and then potentially miss
@@ -192,16 +192,13 @@ function WpaClient.__index:scanThenGetResults()
         self:readAllEvents(evs)
 
         for _, ev in ipairs(evs) do
-            -- NOTE: If we hit a network preferred by the system, we may get connected directly,
-            --       but we'll handle that later in WpaSupplicant:getNetworkList...
-
             if ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
                 finished_scans = finished_scans + 1
                 -- We're only done once all the scans we've started have finished *and*
                 -- when this number matches the actual number of scans we expected,
                 -- in case there were rescans triggered by CTRL-EVENT-NETWORK-NOT-FOUND
                 if started_scans == 0 then
-                    -- NOTE: Ignore started_scans on platforms without the event
+                    -- NOTE: Ignore started_scans on platforms without the event...
                     found_result = finished_scans == expected_scans
                 else
                     found_result = finished_scans == started_scans and finished_scans == expected_scans
@@ -227,7 +224,9 @@ function WpaClient.__index:scanThenGetResults()
                 started_scans = started_scans + 1
             end
 
-            -- Also break on successful connection (which usually implies we saw SCAN-RESULTS earlier ;p)
+            -- NOTE: If we hit a network preferred by the system, we may get connected directly,
+            --       but we'll handle that later in WpaSupplicant:getNetworkList...
+            -- Do break on successful connection, though (which usually implies we saw SCAN-RESULTS earlier ;p)
             if string.sub(ev.msg, 1, 20) == "CTRL-EVENT-CONNECTED" then
                 found_result = true
             end
