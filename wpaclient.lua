@@ -170,7 +170,7 @@ function WpaClient.__index:scanThenGetResults()
         return nil, err
     end
 
-    local found_result, done
+    local found_result, done, first_msg
     local started_scans = 0
     local finished_scans = 0
     local expected_scans = 1
@@ -195,6 +195,15 @@ function WpaClient.__index:scanThenGetResults()
             -- NOTE: If we hit a network preferred by the system, we may get connected directly,
             --       but we'll handle that later in WpaSupplicant:getNetworkList...
 
+            -- Try to deal with stupidly old userland with no CTRL-EVENT-SCAN-STARTED events...
+            if not first_msg then
+                if ev.msg ~= "CTRL-EVENT-SCAN-STARTED" then
+                    -- This'll deal with the original expected scans.
+                    started_scans = started_scans + 1
+                end
+                first_msg = true
+            end
+
             if ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
                 finished_scans = finished_scans + 1
                 -- We're only done once all the scans we've started have finished *and*
@@ -215,7 +224,8 @@ function WpaClient.__index:scanThenGetResults()
                 expected_scans = expected_scans + 1
             end
 
-            -- Wait for it to finish
+            -- Wait for every started scan to finish
+            -- NOTE: Because everything is terrible, this event isn't sent on older devices... -_-"
             if ev.msg == "CTRL-EVENT-SCAN-STARTED" then
                 found_result = false
                 started_scans = started_scans + 1
