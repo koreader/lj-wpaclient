@@ -164,21 +164,23 @@ function WpaClient.__index:scanThenGetResults()
             return nil, "Failed to ATTACH: " .. err
         end
     end
-    -- May harmlessly fail with FAIL-BUSY
+    -- May harmlessly fail with FAIL-BUSY if there's already a scan in progress
     reply, err = self:doScan()
     if reply == nil then
         return nil, err
     end
+    print("SCAN reply:", reply)
 
     local found_result, done
-    local started_scans = 0
+    -- NOTE: If our own SCAN command replied with "FAIL-BUSY", we won't get an initial CTRL-EVENT-SCAN-STARTED for the in-progress scan (as it wasn't ours), account for that.
+    local started_scans = string.sub(reply, 1, 9) == "FAIL-BUSY" and 1 or 0
     local finished_scans = 0
     local expected_scans = 1
     local iter = 0
     while not done and iter < 80 do
         iter = iter + 1
         -- Wait for new data from wpa_supplicant in steps of at most 250ms.
-        local incoming = wpa_ctrl.waitForResponse(self.wc_hdl, 250)
+        local incoming = self:waitForEvent(250)
         -- NOTE: If our previous iteration was successful and there's no more data over the wire,
         --       assume we're at no risk of a split scan, meaning we're done.
         --       We do this because wpa_supplicant may start another scan on its own,
@@ -192,10 +194,12 @@ function WpaClient.__index:scanThenGetResults()
         for _, ev in ipairs(evs) do
             if ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
                 finished_scans = finished_scans + 1
+
+
                 -- We're only done once all the scans we've started have finished *and*
                 -- when this number matches the actual number of scans we expected,
                 -- in case there were rescans triggered by CTRL-EVENT-NETWORK-NOT-FOUND
-                if started_scans == 0 then
+                if started_scans <= 1 then
                     -- NOTE: Ignore started_scans on platforms without the event...
                     found_result = finished_scans == expected_scans
                 else
@@ -228,7 +232,7 @@ function WpaClient.__index:scanThenGetResults()
             end
 
             -- For debugging purposes
-            --print(iter, expected_scans, started_scans, finished_scans, ev.msg)
+            print(iter, expected_scans, started_scans, finished_scans, ev.msg)
         end
     end
 
