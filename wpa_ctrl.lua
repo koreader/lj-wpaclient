@@ -65,11 +65,20 @@ function event_queue_mt.__index:push(ele)
     if #self.queue >= MAX_EV_QUEUE_SZ then
         table.remove(self.queue, 1)
     end
+    print("Push:", ele.msg)
     table.insert(self.queue, ele)
 end
 
 function event_queue_mt.__index:pop()
     return table.remove(self.queue)
+end
+
+function event_queue_mt.__index:drain(dst)
+    for _, ele in ipairs(self.queue) do
+        table.insert(dst, ele)
+    end
+
+    self.queue = {}
 end
 
 local function new_event_queue()
@@ -209,6 +218,10 @@ end
 
 function wpa_ctrl.readEvent(hdl)
     return hdl.event_queue:pop()
+end
+
+function wpa_ctrl.readAllEvents(hdl, dst)
+    return hdl.event_queue:drain(dst)
 end
 
 function wpa_ctrl.detach(hdl)

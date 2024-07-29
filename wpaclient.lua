@@ -229,7 +229,7 @@ function WpaClient.__index:scanThenGetResults()
             end
 
             -- For debugging purposes
-            --print(iter, expected_scans, started_scans, finished_scans, ev.msg)
+            print(iter, expected_scans, started_scans, finished_scans, ev.msg)
         end
     end
 
@@ -378,15 +378,9 @@ function WpaClient.__index:readAllEvents(evs)
     -- This will call Socket:recvAll, filling the event queue (or not)
     wpa_ctrl.readResponse(self.wc_hdl)
 
-    -- Drain the replies pushed in the event queue by Socket:recvAll in FILO order.
-    -- NOTE: This essentially reverses self.wc_hdl.event_queue...
+    -- Drain the replies pushed in the event queue by Socket:recvAll, keeping it in order.
     evs = evs or {}
-    repeat
-        local ev = wpa_ctrl.readEvent(self.wc_hdl)
-        if ev ~= nil then
-            table.insert(evs, ev)
-        end
-    until ev == nil
+    wpa_ctrl.readAllEvents(self.wc_hdl, evs)
     return evs
 end
 
