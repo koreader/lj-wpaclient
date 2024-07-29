@@ -170,26 +170,65 @@ function WpaClient.__index:scanThenGetResults()
         return nil, err
     end
 
-    local found_result = false
-    local wait_cnt = 20
-    while wait_cnt > 0 do
-        for _, ev in ipairs(self:readAllEvents()) do
-            -- NOTE: If we hit a network preferred by the system, we may get connected directly,
-            --       but we'll handle that later in WpaSupplicant:getNetworkList...
-            if ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
-                found_result = true
-                break
-            end
-        end
-        if found_result then
-            break
-        end
-
-        wait_cnt = wait_cnt - 1
+    local found_result
+    local iter = 0
+    while not found_result and iter < 20 do
+        iter = iter + 1
         -- Wait for new data from wpa_supplicant in steps of at most 1 second.
         -- NOTE: I'm wary of simply doing a 20s poll, because we *may* receive events unrelated to the scan,
         --       unlike in sendCmd...
+        -- NOTE: We do multiple passes, because wpa_supplicant may start a second scan on its own,
+        --       and we'd like to catch it in a single of our own iteration...
+        --       (i.e., we don't want to break on CTRL-EVENT-SCAN-RESULTS and then potentially miss
+        --       a CTRL-EVENT-SCAN-STARTED on the *next* iteration...)
+        --       c.f., the extra logic below that tries to handle this in case that wasn't enough.
+        local evs = {}
         wpa_ctrl.waitForResponse(self.wc_hdl, 1 * 1000)
+        self:readAllEvents(evs)
+        wpa_ctrl.waitForResponse(self.wc_hdl, 1 * 1000)
+        self:readAllEvents(evs)
+        wpa_ctrl.waitForResponse(self.wc_hdl, 1 * 1000)
+        self:readAllEvents(evs)
+
+        for _, ev in ipairs(evs) do
+            -- NOTE: If we hit a network preferred by the system, we may get connected directly,
+            --       but we'll handle that later in WpaSupplicant:getNetworkList...
+            --[[
+
+            -- If we get CTRL-EVENT-NETWORK-NOT-FOUND, it means a preferred network wasn't found during the scan.
+            -- It also means *another* scan will be fired, so this invalidates the following CTRL-EVENT-SCAN-RESULTS,
+            -- as the actual CTRL-EVENT-SCAN-STARTED may be delayed until our next iteration...
+            -- (i.e., it goes CTRL-EVENT-NETWORK-NOT-FOUND -> CTRL-EVENT-SCAN-RESULTS -> CTRL-EVENT-SCAN-STARTED,
+            -- and they may be split across different reads...).
+            -- And sometimes, it takes a *third* scan, and we're fucked, because then it goes:
+            -- CTRL-EVENT-SCAN-RESULTS -> CTRL-EVENT-NETWORK-NOT-FOUND -> CTRL-EVENT-SCAN-STARTED,
+            -- often split across three or *more* reads -_-".
+            -- Which is why NetworkManager does another pass of waiting...
+            -- (Our only solution for this case would be to wait *only* for CTRL-EVENT-CONNECTED *here*,
+            -- but that only works when we actually have preferred networks to begin with, and one in range to boot ;o)).
+            local pending_another_scan = false
+            if ev.msg == "CTRL-EVENT-NETWORK-NOT-FOUND" then
+                pending_another_scan = true
+            end
+
+            if ev.msg == "CTRL-EVENT-SCAN-RESULTS" and not pending_another_scan then
+                found_result = true
+            end
+
+            -- If another scan was started, wait for it to finish
+            if ev.msg == "CTRL-EVENT-SCAN-STARTED" then
+                found_result = false
+            end
+            --]]
+
+            -- Also break on successful connection (which usually implies we saw SCAN-RESULTS earlier ;p)
+            if string.sub(ev.msg, 1, 20) == "CTRL-EVENT-CONNECTED" then
+                found_result = true
+            end
+
+            -- For debugging purposes
+            print(iter, ev.msg)
+        end
     end
 
     if self.attached then
@@ -333,13 +372,13 @@ function WpaClient.__index:readEvent()
     return wpa_ctrl.readEvent(self.wc_hdl)
 end
 
-function WpaClient.__index:readAllEvents()
+function WpaClient.__index:readAllEvents(evs)
     -- This will call Socket:recvAll, filling the event queue (or not)
     wpa_ctrl.readResponse(self.wc_hdl)
 
     -- Drain the replies pushed in the event queue by Socket:recvAll in FILO order.
     -- NOTE: This essentially reverses self.wc_hdl.event_queue...
-    local evs = {}
+    evs = evs or {}
     repeat
         local ev = wpa_ctrl.readEvent(self.wc_hdl)
         if ev ~= nil then
