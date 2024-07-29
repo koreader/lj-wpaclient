@@ -193,7 +193,6 @@ function WpaClient.__index:scanThenGetResults()
         for _, ev in ipairs(evs) do
             -- NOTE: If we hit a network preferred by the system, we may get connected directly,
             --       but we'll handle that later in WpaSupplicant:getNetworkList...
-            --[[
 
             -- If we get CTRL-EVENT-NETWORK-NOT-FOUND, it means a preferred network wasn't found during the scan.
             -- It also means *another* scan will be fired, so this invalidates the following CTRL-EVENT-SCAN-RESULTS,
@@ -219,7 +218,6 @@ function WpaClient.__index:scanThenGetResults()
             if ev.msg == "CTRL-EVENT-SCAN-STARTED" then
                 found_result = false
             end
-            --]]
 
             -- Also break on successful connection (which usually implies we saw SCAN-RESULTS earlier ;p)
             if string.sub(ev.msg, 1, 20) == "CTRL-EVENT-CONNECTED" then
@@ -227,7 +225,7 @@ function WpaClient.__index:scanThenGetResults()
             end
 
             -- For debugging purposes
-            print(iter, ev.msg)
+            --print(iter, ev.msg)
         end
     end
 
