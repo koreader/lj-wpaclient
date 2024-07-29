@@ -180,11 +180,10 @@ function WpaClient.__index:scanThenGetResults()
         -- Wait for new data from wpa_supplicant in steps of at most 250ms.
         local incoming = wpa_ctrl.waitForResponse(self.wc_hdl, 250)
         -- NOTE: If our previous iteration was successful and there's no more data over the wire,
-        --       assume we're at no risk of a split scan, so we're done.
+        --       assume we're at no risk of a split scan, meaning we're done.
         --       We do this because wpa_supplicant may start another scan on its own,
         --       and we don't want to break on CTRL-EVENT-SCAN-RESULTS and then potentially miss
         --       a CTRL-EVENT-SCAN-STARTED on the *next* iteration...
-        --       c.f., the extra logic below that tries to handle this in case that wasn't enough.
         done = found_result and not incoming
 
         local evs = {}
@@ -204,13 +203,11 @@ function WpaClient.__index:scanThenGetResults()
                 end
             end
 
-            -- If we get CTRL-EVENT-NETWORK-NOT-FOUND, it means a preferred network wasn't found during the scan.
+            -- If we get CTRL-EVENT-NETWORK-NOT-FOUND, it means no preferred networks were found during the scan.
             -- It also means *another* scan will be fired, so this invalidates CTRL-EVENT-SCAN-RESULTS,
             -- as the actual CTRL-EVENT-SCAN-STARTED may be delayed until our next iteration...
             -- It may take *multiple* scans, and events may be split across multiple reads...
             -- Which is why NetworkManager does another pass of waiting in case our heuristics fail...
-            -- (A "perfect" solution for this case would be to wait *only* for CTRL-EVENT-CONNECTED *here*,
-            -- but that only works when we actually have preferred networks to begin with, and one in range to boot ;o)).
             if ev.msg == "CTRL-EVENT-NETWORK-NOT-FOUND" then
                 found_result = false
                 expected_scans = expected_scans + 1
