@@ -199,6 +199,9 @@ function WpaClient.__index:scanThenGetResults()
 
             if ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
                 finished_scans = finished_scans + 1
+                -- We're only done once all the scans we've started have finished *and*
+                -- when this number matches the actual number of scans we expected,
+                -- in case there were rescans triggered by CTRL-EVENT-NETWORK-NOT-FOUND
                 found_result = finished_scans == started_scans and finished_scans == expected_scans
             end
 
