@@ -34,12 +34,14 @@ function event_mt.__index:isAuthFailed()
             or string.match(self.msg, "^Authentication with (.-) timed out%.$") ~= nil)
 end
 
+-- c.f., hostap's src/utils/wpa_debug.h
 local ev_lv2str = {
-    ["0"] = "MSGDUMP",
-    ["1"] = "DEBUG",
-    ["2"] = "INFO",
-    ["3"] = "WARNING",
-    ["4"] = "ERROR",
+    ["0"] = "EXCESSIVE",
+    ["1"] = "MSGDUMP",
+    ["2"] = "DEBUG",
+    ["3"] = "INFO",
+    ["4"] = "WARNING",
+    ["5"] = "ERROR",
 }
 local MAX_EV_QUEUE_SZ = 1024
 local event_queue_mt = {__index = {}}
