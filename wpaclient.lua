@@ -186,7 +186,6 @@ function WpaClient.__index:scanThenGetResults()
         --       a CTRL-EVENT-SCAN-STARTED on the *next* iteration...
         --       c.f., the extra logic below that tries to handle this in case that wasn't enough.
         done = found_result and not incoming
-        print("done:", done)
 
         local evs = {}
         self:readAllEvents(evs)
@@ -232,7 +231,7 @@ function WpaClient.__index:scanThenGetResults()
             end
 
             -- For debugging purposes
-            print(iter, expected_scans, started_scans, finished_scans, ev.msg)
+            --print(iter, expected_scans, started_scans, finished_scans, ev.msg)
         end
     end
 
