@@ -182,6 +182,7 @@ function Socket.__index:recvAll(flags, event_queue)
                     else
                         table.insert(full_buf, data)
 
+                        -- Break on control command replies
                         if re > 0 then
                             if data == "OK\n"
                             or data:sub(1, 4) == "FAIL" then
