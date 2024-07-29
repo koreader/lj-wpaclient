@@ -208,7 +208,7 @@ function WpaClient.__index:scanThenGetResults()
             -- If we get CTRL-EVENT-NETWORK-NOT-FOUND, it means a preferred network wasn't found during the scan.
             -- It also means *another* scan will be fired, so this invalidates CTRL-EVENT-SCAN-RESULTS,
             -- as the actual CTRL-EVENT-SCAN-STARTED may be delayed until our next iteration...
-            -- It may take *multiple* scans, and events may be split across multiple reads and come in various orders...
+            -- It may take *multiple* scans, and events may be split across multiple reads...
             -- Which is why NetworkManager does another pass of waiting in case our heuristics fail...
             -- (A "perfect" solution for this case would be to wait *only* for CTRL-EVENT-CONNECTED *here*,
             -- but that only works when we actually have preferred networks to begin with, and one in range to boot ;o)).
@@ -367,6 +367,7 @@ function WpaClient.__index:waitForEvent(timeout)
     return wpa_ctrl.waitForResponse(self.wc_hdl, timeout)
 end
 
+-- Return the *last* event
 function WpaClient.__index:readEvent()
     -- NOTE: This may read nothing...
     wpa_ctrl.readResponse(self.wc_hdl)
@@ -374,11 +375,12 @@ function WpaClient.__index:readEvent()
     return wpa_ctrl.readEvent(self.wc_hdl)
 end
 
+-- Return *all* events *in the order they came in* (into the array evs)
 function WpaClient.__index:readAllEvents(evs)
     -- This will call Socket:recvAll, filling the event queue (or not)
     wpa_ctrl.readResponse(self.wc_hdl)
 
-    -- Drain the replies pushed in the event queue by Socket:recvAll, keeping it in order.
+    -- Drain the replies pushed in the event queue by Socket:recvAll, keeping everything in order.
     evs = evs or {}
     wpa_ctrl.readAllEvents(self.wc_hdl, evs)
     return evs

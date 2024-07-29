@@ -65,7 +65,6 @@ function event_queue_mt.__index:push(ele)
     if #self.queue >= MAX_EV_QUEUE_SZ then
         table.remove(self.queue, 1)
     end
-    print("Push:", ele.msg)
     table.insert(self.queue, ele)
 end
 
@@ -216,10 +215,12 @@ function wpa_ctrl.reattach(hdl)
     return wpa_ctrl.control_command(hdl, "REATTACH")
 end
 
+-- Return the *last* event
 function wpa_ctrl.readEvent(hdl)
     return hdl.event_queue:pop()
 end
 
+-- Return *all* events *in the order they came in* (into the array dst)
 function wpa_ctrl.readAllEvents(hdl, dst)
     return hdl.event_queue:drain(dst)
 end
