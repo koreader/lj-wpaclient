@@ -164,16 +164,17 @@ function WpaClient.__index:scanThenGetResults()
             return nil, "Failed to ATTACH: " .. err
         end
     end
-    -- May harmlessly fail with FAIL-BUSY if there's already a scan in progress
+    -- NOTE: May harmlessly fail with FAIL-BUSY if there's already a scan in progress,
+    --       in which case, we *may* miss the initial CTRL-EVENT-SCAN-STARTED event...
     reply, err = self:doScan()
     if reply == nil then
         return nil, err
     end
+    -- For debugging purposes
     print("SCAN reply:", reply)
 
     local found_result, done
-    -- NOTE: If our own SCAN command replied with "FAIL-BUSY", we won't get an initial CTRL-EVENT-SCAN-STARTED for the in-progress scan (as it wasn't ours), account for that.
-    local started_scans = string.sub(reply, 1, 9) == "FAIL-BUSY" and 1 or 0
+    local started_scans = 0
     local finished_scans = 0
     local expected_scans = 1
     local iter = 0
@@ -190,6 +191,13 @@ function WpaClient.__index:scanThenGetResults()
 
         local evs = {}
         self:readAllEvents(evs)
+
+        -- Fudge the counter when we're missing the initial scan-started event...
+        if started_scans == 0 and evs[1] and evs[1].msg ~= "CTRL-EVENT-SCAN-STARTED" then
+            -- NOTE: Should technically *only* happen when string.sub(reply, 1, 9) == "FAIL-BUSY",
+            --       but doing this regardless is harmless.
+            started_scans = 1
+        end
 
         for _, ev in ipairs(evs) do
             if ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
