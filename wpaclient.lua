@@ -171,7 +171,7 @@ function WpaClient.__index:scanThenGetResults()
         return nil, err
     end
     -- For debugging purposes
-    print("SCAN reply:", reply)
+    --print("SCAN reply:", reply)
 
     local found_result, done
     local started_scans = 0
@@ -241,7 +241,7 @@ function WpaClient.__index:scanThenGetResults()
             end
 
             -- For debugging purposes
-            print(iter, expected_scans, started_scans, finished_scans, ev.msg)
+            --print(iter, expected_scans, started_scans, finished_scans, ev.msg)
         end
     end
 
