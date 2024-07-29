@@ -171,6 +171,9 @@ function WpaClient.__index:scanThenGetResults()
     end
 
     local found_result
+    local started_scans = 0
+    local finished_scans = 0
+    local expected_scans = 1
     local iter = 0
     while not found_result and iter < 20 do
         iter = iter + 1
@@ -194,29 +197,27 @@ function WpaClient.__index:scanThenGetResults()
             -- NOTE: If we hit a network preferred by the system, we may get connected directly,
             --       but we'll handle that later in WpaSupplicant:getNetworkList...
 
+            if ev.msg == "CTRL-EVENT-SCAN-RESULTS" then
+                finished_scans = finished_scans + 1
+                found_result = finished_scans == started_scans and finished_scans == expected_scans
+            end
+
             -- If we get CTRL-EVENT-NETWORK-NOT-FOUND, it means a preferred network wasn't found during the scan.
-            -- It also means *another* scan will be fired, so this invalidates the following CTRL-EVENT-SCAN-RESULTS,
+            -- It also means *another* scan will be fired, so this invalidates CTRL-EVENT-SCAN-RESULTS,
             -- as the actual CTRL-EVENT-SCAN-STARTED may be delayed until our next iteration...
-            -- (i.e., it goes CTRL-EVENT-NETWORK-NOT-FOUND -> CTRL-EVENT-SCAN-RESULTS -> CTRL-EVENT-SCAN-STARTED,
-            -- and they may be split across different reads...).
-            -- And sometimes, it takes a *third* scan, and we're fucked, because then it goes:
-            -- CTRL-EVENT-SCAN-RESULTS -> CTRL-EVENT-NETWORK-NOT-FOUND -> CTRL-EVENT-SCAN-STARTED,
-            -- often split across three or *more* reads -_-".
+            -- It may take *multiple* scans, and events may be split across multiple reads in various orders...
             -- Which is why NetworkManager does another pass of waiting...
             -- (Our only solution for this case would be to wait *only* for CTRL-EVENT-CONNECTED *here*,
             -- but that only works when we actually have preferred networks to begin with, and one in range to boot ;o)).
-            local pending_another_scan = false
             if ev.msg == "CTRL-EVENT-NETWORK-NOT-FOUND" then
-                pending_another_scan = true
+                found_result = false
+                expected_scans = expected_scans + 1
             end
 
-            if ev.msg == "CTRL-EVENT-SCAN-RESULTS" and not pending_another_scan then
-                found_result = true
-            end
-
-            -- If another scan was started, wait for it to finish
+            -- Wait for it to finish
             if ev.msg == "CTRL-EVENT-SCAN-STARTED" then
                 found_result = false
+                started_scans = started_scans + 1
             end
 
             -- Also break on successful connection (which usually implies we saw SCAN-RESULTS earlier ;p)
@@ -225,7 +226,7 @@ function WpaClient.__index:scanThenGetResults()
             end
 
             -- For debugging purposes
-            --print(iter, ev.msg)
+            --print(iter, expected_scans, started_scans, finished_scans, ev.msg)
         end
     end
 
