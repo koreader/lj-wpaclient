@@ -229,7 +229,7 @@ function WpaClient.__index:scanThenGetResults()
             end
 
             -- For debugging purposes
-            print(iter, expected_scans, started_scans, finished_scans, ev.msg)
+            --print(iter, expected_scans, started_scans, finished_scans, ev.msg)
         end
     end
 
