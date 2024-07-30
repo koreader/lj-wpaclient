@@ -213,29 +213,26 @@ function WpaClient.__index:scanThenGetResults()
                 else
                     found_result = finished_scans == started_scans and finished_scans == expected_scans
                 end
-            end
 
             -- If we get CTRL-EVENT-NETWORK-NOT-FOUND, it means no preferred networks were found during the scan.
             -- It also means *another* scan will be fired, so this invalidates CTRL-EVENT-SCAN-RESULTS,
             -- as the actual CTRL-EVENT-SCAN-STARTED may be delayed until our next iteration...
             -- It may take *multiple* scans, and events may be split across multiple reads...
             -- Which is why NetworkManager does another pass of waiting in case our heuristics fail...
-            if ev.msg == "CTRL-EVENT-NETWORK-NOT-FOUND" then
+            elseif ev.msg == "CTRL-EVENT-NETWORK-NOT-FOUND" then
                 found_result = false
                 expected_scans = expected_scans + 1
-            end
 
             -- Wait for every started scan to finish
             -- NOTE: Because everything is terrible, this event isn't sent on older devices... -_-"
-            if ev.msg == "CTRL-EVENT-SCAN-STARTED" then
+            elseif ev.msg == "CTRL-EVENT-SCAN-STARTED" then
                 found_result = false
                 started_scans = started_scans + 1
-            end
 
             -- NOTE: If we hit a network preferred by the system, we may get connected directly,
             --       but we'll handle that later in WpaSupplicant:getNetworkList...
             -- Do break on successful connection, though (which usually implies we saw SCAN-RESULTS earlier ;p)
-            if string.sub(ev.msg, 1, 20) == "CTRL-EVENT-CONNECTED" then
+            elseif string.sub(ev.msg, 1, 20) == "CTRL-EVENT-CONNECTED" then
                 found_result = true
             end
 
