@@ -231,7 +231,7 @@ function WpaClient.__index:scanThenGetResults()
 
             -- NOTE: If we hit a network preferred by the system, we may get connected directly,
             --       but we'll handle that later in WpaSupplicant:getNetworkList...
-            -- Do break on successful connection, though (which usually implies we saw SCAN-RESULTS earlier ;p)
+            -- Do break on successful connection, though ;).
             elseif string.sub(ev.msg, 1, 20) == "CTRL-EVENT-CONNECTED" then
                 found_result = true
             end
