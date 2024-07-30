@@ -34,12 +34,14 @@ function event_mt.__index:isAuthFailed()
             or string.match(self.msg, "^Authentication with (.-) timed out%.$") ~= nil)
 end
 
+-- c.f., hostap's src/utils/wpa_debug.h
 local ev_lv2str = {
-    ["0"] = "MSGDUMP",
-    ["1"] = "DEBUG",
-    ["2"] = "INFO",
-    ["3"] = "WARNING",
-    ["4"] = "ERROR",
+    ["0"] = "EXCESSIVE",
+    ["1"] = "MSGDUMP",
+    ["2"] = "DEBUG",
+    ["3"] = "INFO",
+    ["4"] = "WARNING",
+    ["5"] = "ERROR",
 }
 local MAX_EV_QUEUE_SZ = 1024
 local event_queue_mt = {__index = {}}
@@ -70,6 +72,14 @@ end
 
 function event_queue_mt.__index:pop()
     return table.remove(self.queue)
+end
+
+function event_queue_mt.__index:drain(dst)
+    for _, ele in ipairs(self.queue) do
+        table.insert(dst, ele)
+    end
+
+    self.queue = {}
 end
 
 local function new_event_queue()
@@ -207,8 +217,14 @@ function wpa_ctrl.reattach(hdl)
     return wpa_ctrl.control_command(hdl, "REATTACH")
 end
 
+-- Return the *last* event
 function wpa_ctrl.readEvent(hdl)
     return hdl.event_queue:pop()
+end
+
+-- Return *all* events *in the order they came in* (into the array dst)
+function wpa_ctrl.readAllEvents(hdl, dst)
+    return hdl.event_queue:drain(dst)
 end
 
 function wpa_ctrl.detach(hdl)
