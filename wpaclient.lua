@@ -215,10 +215,10 @@ function WpaClient.__index:scanThenGetResults()
                 end
 
             -- If we get CTRL-EVENT-NETWORK-NOT-FOUND, it means no preferred networks were found during the scan.
-            -- It also means *another* scan will be fired, so this invalidates CTRL-EVENT-SCAN-RESULTS,
-            -- as the actual CTRL-EVENT-SCAN-STARTED may be delayed until our next iteration...
-            -- It may take *multiple* scans, and events may be split across multiple reads...
-            -- Which is why NetworkManager does another pass of waiting in case our heuristics fail...
+            -- It also means *another* scan will be fired, provided at least one preferred network is configured.
+            -- So this invalidates CTRL-EVENT-SCAN-RESULTS, as the actual CTRL-EVENT-SCAN-STARTED may be delayed
+            -- until our next iteration... It may take *multiple* scans, and events may be split across multiple
+            -- reads... Which is why NetworkManager does another pass of waiting in case our heuristics fail...
             elseif ev.msg == "CTRL-EVENT-NETWORK-NOT-FOUND" then
                 found_result = false
                 expected_scans = expected_scans + 1
@@ -238,6 +238,15 @@ function WpaClient.__index:scanThenGetResults()
 
             -- For debugging purposes
             --print(iter, expected_scans, started_scans, finished_scans, ev.msg)
+        end
+
+        -- If no preferred networks are configured then wpa_supplicant may
+        -- become inactive. Return immediately if this has happened.
+        if not (done or incoming) then
+            local status, err = self:getStatus()
+            if status ~= nil and status.wpa_state == "INACTIVE" then
+                done = true
+            end
         end
     end
 
