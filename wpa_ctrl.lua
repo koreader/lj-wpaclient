@@ -11,6 +11,7 @@ struct sockaddr_un {
 };
 ]])
 pcall(ffi.cdef, "int unlink(const char *) __attribute__((nothrow, leaf));")
+pcall(ffi.cdef, "int getpid(void) __attribute__((nothrow, leaf));")
 
 local sockaddr_un_t = ffi.typeof("struct sockaddr_un")
 

@@ -26,9 +26,13 @@ cdecl_func(recvfrom)
 cdecl_func(send)
 cdecl_func(close)
 
+cdecl_func(getpid)
 cdecl_func(unlink)
 
 cdecl_const(POLLIN)
+cdecl_const(POLLOUT)
+cdecl_const(POLLERR)
+cdecl_const(POLLHUP)
 cdecl_struct(pollfd)
 cdecl_func(poll)
 
