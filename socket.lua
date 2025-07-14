@@ -6,7 +6,6 @@ local C = ffi.C
 require(cur_path .. "consts_h")
 require(cur_path .. "socket_h")
 require(cur_path .. "poll_h")
-require(cur_path .. "select_h")
 
 
 local sockaddr_pt = ffi.typeof("struct sockaddr *")

@@ -32,11 +32,10 @@ cdecl_const(POLLIN)
 cdecl_const(POLLOUT)
 cdecl_const(POLLERR)
 cdecl_const(POLLHUP)
-cdecl_struct(pollfd)
-cdecl_func(poll)
-
 cdecl_const(POLLRDNORM)
 cdecl_const(POLLRDBAND)
+cdecl_struct(pollfd)
+cdecl_func(poll)
 
 cdecl_const(EINTR)
 cdecl_const(EAGAIN)
