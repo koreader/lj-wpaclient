@@ -1,12 +1,11 @@
-local cur_path = (...):match("(.-)[^%(.|/)]+$")
 local ffi = require("ffi")
 
--- Handle arch-dependent typedefs...
-if ffi.abi("64bit") then
-    require(cur_path .. "select_64b_h")
-else
-    require(cur_path .. "select_def_h")
-end
+pcall(ffi.cdef, "typedef long int __fd_mask;")
+pcall(ffi.cdef, [[
+typedef struct {
+  __fd_mask __fds_bits[32];
+} fd_set;
+]])
 pcall(ffi.cdef, "int select(int, fd_set *restrict, fd_set *restrict, fd_set *restrict, struct timeval *restrict);")
 
 pcall(ffi.cdef, "static const int POLLRDNORM = 64;")
