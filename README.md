@@ -40,11 +40,13 @@ local wcli = WpaClient.new('/var/run/wpa_supplicant/wlan0')
 wcli:attach()
 wcli:doScan()
 while true do
-    ev = wcli:readEvent()
+    local incoming = pcall(function() wcli:waitForEvent(-1) end) -- inf wait
+    if not incoming then
+        break
+    end
+    local ev = wcli:readEvent()
     if ev ~= nil then
         print('got event:', ev.lvl, ev.msg)
-    else
-        os.execute('sleep 2')
     end
 end
 wcli:close()
