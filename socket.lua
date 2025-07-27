@@ -6,42 +6,9 @@ local C = ffi.C
 require(cur_path .. "consts_h")
 require(cur_path .. "socket_h")
 require(cur_path .. "poll_h")
-require(cur_path .. "select_h")
 
 
 local sockaddr_pt = ffi.typeof("struct sockaddr *")
-
--- Most of this select tooling is handled via macros in C...
---[[
-local __NFDBITS = 8 * ffi.sizeof("__fd_mask")
-local function __FD_ELT(d)
-    return math.floor(d / __NFDBITS)
-end
-local function __FD_MASK(d)
-    return ffi.cast("__fd_mask", bit.lshift(1, d % __NFDBITS))
-end
-
-local function FD_ZERO(s)
-    for i = 0, ffi.sizeof("fd_set") / ffi.sizeof("__fd_mask") do
-        s.__fds_bits[i] = 0
-    end
-end
-
-local function FD_SET(d, s)
-    local fd_idx = __FD_ELT(d)
-    s.__fds_bits[fd_idx] = bit.bor(s.__fds_bits[fd_idx], __FD_MASK(d))
-end
-
-local function FD_CLR(d, s)
-    local fd_idx = __FD_ELT(d)
-    s.__fds_bits[fd_idx] = bit.band(s.__fds_bits[fd_idx], bit.bnot(__FD_MASK(d)))
-end
-
-local function FD_ISSET(d, s)
-    local fd_idx = __FD_ELT(d)
-    return bit.band(s.__fds_bits[fd_idx], __FD_MASK(d)) ~= 0
-end
---]]
 
 -- To match FD_ISSET behavior with poll
 local POLLIN_SET = bit.bor(C.POLLRDNORM, C.POLLRDBAND, C.POLLIN, C.POLLHUP, C.POLLERR)
